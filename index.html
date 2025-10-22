@@ -5,156 +5,374 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ChatGPT 聊天记录查看器</title>
 <style>
-:root {
-  --bg-light: #f5f5f5;
-  --bg-dark: #1e1e1e;
-  --user-color: #0078ff;
-  --assistant-color: #666;
-  --text-light: #111;
-  --text-dark: #ddd;
+:root{
+  --bg-light:#f6f6f7; --bg-dark:#1b1b1f;
+  --text-light:#0f1115; --text-dark:#e7e7ea;
+  --user:#0a84ff; --assistant:#5e5e66; --sys:#9b59b6;
+  --chip:#d0d5dd22; --border:#00000014; --border-dark:#ffffff22;
 }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: var(--bg-light);
-  color: var(--text-light);
-  transition: all .3s;
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg-light);color:var(--text-light);transition:.25s}
+body.dark{background:var(--bg-dark);color:var(--text-dark)}
+header{position:sticky;top:0;backdrop-filter:saturate(180%) blur(8px);
+  background:color-mix(in oklab,currentColor 5%,transparent);
+  display:flex;gap:.6rem;align-items:center;justify-content:space-between;
+  padding:.6rem .9rem;border-bottom:1px solid var(--border)}
+body.dark header{border-bottom-color:var(--border-dark)}
+h1{font-size:1rem;margin:0;font-weight:600}
+.controls{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+button,select,input[type="number"]{
+  padding:.45rem .7rem;border-radius:9px;border:1px solid var(--border);
+  background:#fff;color:#111;cursor:pointer;font-size:.9rem
 }
-body.dark {
-  background-color: var(--bg-dark);
-  color: var(--text-dark);
+body.dark button,body.dark select,body.dark input[type="number"]{
+  background:#2a2a31;color:var(--text-dark);border-color:var(--border-dark)
 }
-header {
-  position: sticky;
-  top: 0;
-  background: inherit;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: .5em 1em;
-  border-bottom: 1px solid #ccc;
+button:active{transform:scale(.98)}
+input[type=file]{display:none}
+
+.toolbar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.badge{padding:.2rem .5rem;border-radius:7px;border:1px solid var(--border);
+  font-size:.78rem;opacity:.9}
+body.dark .badge{border-color:var(--border-dark)}
+.container{padding:1rem;display:flex;flex-direction:column;gap:.9rem}
+.selector{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+hr{border:none;height:1px;background:var(--border)}
+body.dark hr{background:var(--border-dark)}
+
+.chat{display:flex;flex-direction:column;gap:.8rem}
+.msg{max-width:86%;padding:.65rem .85rem;border-radius:14px;white-space:pre-wrap;line-height:1.55}
+.user{align-self:flex-end;background:var(--user);color:#fff}
+.assistant{align-self:flex-start;background:var(--assistant);color:#fff}
+.system{align-self:center;background:var(--sys);color:#fff}
+.meta{display:flex;justify-content:space-between;gap:.6rem;margin-top:.35rem;font-size:.78rem;opacity:.9}
+.model{padding:.15rem .5rem;border-radius:999px;background:var(--chip)}
+.branch{
+  margin-top:.5rem;border:1px dashed var(--border);border-radius:10px;padding:.5rem
 }
-button {
-  padding: .4em .8em;
-  margin-left: .4em;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-}
-.chat-container {
-  padding: 1em;
-  display: flex;
-  flex-direction: column;
-  gap: .8em;
-}
-.message {
-  max-width: 85%;
-  padding: .6em .9em;
-  border-radius: 10px;
-  white-space: pre-wrap;
-  line-height: 1.5;
-}
-.user {
-  align-self: flex-end;
-  background: var(--user-color);
-  color: white;
-}
-.assistant {
-  align-self: flex-start;
-  background: var(--assistant-color);
-  color: white;
-}
-.model-tag {
-  font-size: 0.8em;
-  opacity: 0.8;
-  display: block;
-  text-align: right;
-  margin-top: .3em;
-}
-.collapsible {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: .5em;
-  background: rgba(0,0,0,0.05);
-}
-.hidden { display: none; }
+body.dark .branch{border-color:var(--border-dark)}
+.branch>summary{cursor:pointer;font-size:.85rem;opacity:.9}
+.dim{opacity:.6}
+footer{padding:1rem 1rem 2rem;color:inherit;opacity:.8;text-align:center}
+.small{font-size:.82rem}
 </style>
 </head>
 <body>
 <header>
-  <div>📄 ChatGPT 聊天记录查看器</div>
-  <div>
-    <input type="file" id="fileInput" accept=".json,.txt" style="display:none">
-    <button onclick="document.getElementById('fileInput').click()">导入</button>
-    <button onclick="exportChat()">导出</button>
+  <h1>📄 ChatGPT 聊天记录查看器</h1>
+  <div class="controls">
+    <input id="file" type="file" accept=".json" />
+    <button onclick="pickFile()">导入</button>
+    <button onclick="exportHTML()">导出页面</button>
     <button onclick="toggleTheme()">夜间/日间</button>
   </div>
 </header>
 
-<div class="chat-container" id="chatContainer">
-  <p style="opacity:.6;text-align:center;">请选择聊天记录文件导入</p>
+<div class="container">
+  <div class="selector" id="convSelector" style="display:none">
+    <span class="badge">选择会话：</span>
+    <select id="convList" onchange="selectConversation(this.value)"></select>
+    <span class="badge" id="convMeta" title="创建时间 / 消息数"></span>
+  </div>
+
+  <div class="toolbar" id="filters" style="display:none">
+    <span class="badge">只看最近</span>
+    <input type="number" id="lastN" min="1" step="1" value="200" style="width:6rem" />
+    <span class="badge">条</span>
+    <button onclick="applyN()">应用</button>
+    <span class="badge">按模型过滤：</span>
+    <select id="modelFilter" onchange="applyModelFilter()">
+      <option value="">全部</option>
+    </select>
+  </div>
+
+  <div id="chat" class="chat">
+    <p class="dim" style="text-align:center">导入 ChatGPT 官方导出的会话 JSON（单个会话或 conversations.json）。</p>
+  </div>
 </div>
 
-<script>
-let darkMode = false;
-function toggleTheme(){
-  darkMode = !darkMode;
-  document.body.classList.toggle("dark", darkMode);
-}
+<footer class="small">本工具离线运行，解析 ChatGPT 官方导出（mapping 树），默认展示“主路径”对话，分支作为“回溯”可折叠查看。</footer>
 
-document.getElementById('fileInput').addEventListener('change', async function(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  const text = await file.text();
-  try{
-    const data = JSON.parse(text);
-    renderChat(data);
-  }catch{
-    alert("文件格式错误，请导入 JSON 格式的聊天记录。");
-  }
+<script>
+// ============ 主题 ============
+let dark = false;
+function toggleTheme(){ dark=!dark; document.body.classList.toggle('dark', dark); }
+
+// ============ 文件选择 ============
+function pickFile(){ document.getElementById('file').click(); }
+document.getElementById('file').addEventListener('change', async (e)=>{
+  const f = e.target.files?.[0]; if(!f) return;
+  const raw = await f.text();
+  let data;
+  try{ data = JSON.parse(raw); }catch(err){ alert('不是有效 JSON：请从 ChatGPT 官方“导出数据”里取出的 JSON 文件。'); return; }
+  handleImportedJSON(data);
 });
 
-function renderChat(data){
-  const container = document.getElementById('chatContainer');
-  container.innerHTML = '';
-  data.forEach((msg, i)=>{
-    const div = document.createElement('div');
-    div.classList.add('message', msg.role);
-    let content = msg.content || "";
-    const model = msg.model ? `<span class='model-tag'>${msg.model}</span>` : "";
-    // 如果有回溯消息，可折叠
-    if (msg.previous && msg.previous.length > 0){
-      const wrapper = document.createElement('div');
-      wrapper.classList.add('collapsible');
-      const toggleBtn = document.createElement('button');
-      toggleBtn.textContent = `展开/收起回溯 (${msg.previous.length})`;
-      const hiddenDiv = document.createElement('div');
-      hiddenDiv.classList.add('hidden');
-      msg.previous.forEach(p=>{
-        const pDiv = document.createElement('div');
-        pDiv.textContent = p;
-        pDiv.style.margin=".3em 0";
-        hiddenDiv.appendChild(pDiv);
-      });
-      toggleBtn.onclick = ()=>hiddenDiv.classList.toggle('hidden');
-      wrapper.appendChild(toggleBtn);
-      wrapper.appendChild(hiddenDiv);
-      div.appendChild(wrapper);
+// ============ 解析入口 ============
+let conversations = []; // {id,title,created,messages:[{role,content,model,ts}], models:Set}
+let currentConvIndex = 0;
+let renderCache = { lastN: 200, model: "" };
+
+function handleImportedJSON(data){
+  // 可能是：1) 单个会话对象（含 mapping） 2) conversations.json 中的数组/对象列表
+  conversations = [];
+
+  if (Array.isArray(data)) {
+    // conversations.json（数组）
+    data.forEach(obj => { const c = parseConversation(obj); if(c) conversations.push(c); });
+  } else if (data && typeof data === 'object') {
+    if (data.items && Array.isArray(data.items)) {
+      // 某些导出是 { items:[conv, conv,...] }
+      data.items.forEach(obj => { const c = parseConversation(obj); if(c) conversations.push(c); });
+    } else {
+      // 单会话
+      const c = parseConversation(data);
+      if (c) conversations.push(c);
     }
-    div.insertAdjacentHTML('beforeend', content + model);
-    container.appendChild(div);
+  }
+
+  if (!conversations.length){
+    alert('没解析到会话。请确认：\n- 选择的是单个会话 JSON 或 conversations.json\n- 如果你拿到的是 ZIP，请先在“文件”App里解压，再选 JSON');
+    return;
+  }
+
+  // 填会话下拉
+  const selWrap = document.getElementById('convSelector');
+  const sel = document.getElementById('convList');
+  sel.innerHTML = '';
+  conversations.forEach((c, idx)=>{
+    const opt = document.createElement('option');
+    opt.value = String(idx);
+    opt.textContent = c.title || `(无标题) ${idx+1}`;
+    sel.appendChild(opt);
+  });
+  selWrap.style.display = conversations.length>1 ? 'flex' : 'none';
+
+  currentConvIndex = 0;
+  sel.value = '0';
+  updateConvMeta();
+  buildModelFilter();
+  render();
+}
+
+function selectConversation(idxStr){
+  currentConvIndex = Number(idxStr)||0;
+  renderCache = { lastN: 200, model: "" };
+  document.getElementById('lastN').value = 200;
+  document.getElementById('modelFilter').value = "";
+  updateConvMeta();
+  buildModelFilter();
+  render();
+}
+
+function updateConvMeta(){
+  const c = conversations[currentConvIndex];
+  const meta = document.getElementById('convMeta');
+  const created = c.created ? new Date(c.created*1000).toLocaleString() : '—';
+  meta.textContent = `创建：${created}｜消息数：${c.messages.length}`;
+}
+
+// ============ 解析单个会话（mapping → 主路径 + 分支） ============
+function parseConversation(obj){
+  // 粗兼容不同导出版本
+  const title = obj.title || obj.gist || obj.name || '';
+  const created = obj.create_time || obj.update_time || obj.created || 0;
+  const mapping = obj.mapping;
+  const current = obj.current_node;
+
+  if (!mapping || !current) {
+    // 某些早期导出可能有 linear "messages"
+    if (Array.isArray(obj.messages)) {
+      const msgs = obj.messages.map(normalizeLinearMessage).filter(Boolean);
+      return { id: obj.id || crypto.randomUUID(), title, created, messages: msgs, models: new Set(msgs.map(m=>m.model).filter(Boolean)) };
+    }
+    return null;
+  }
+
+  // 1) 沿 current_node 回溯到根，得到“主路径”
+  const pathIds = [];
+  let nodeId = current;
+  while (nodeId && mapping[nodeId]) {
+    pathIds.push(nodeId);
+    nodeId = mapping[nodeId].parent || null;
+  }
+  pathIds.reverse(); // 根→current
+
+  // 2) 主路径消息提取
+  const messages = [];
+  const pathSet = new Set(pathIds);
+
+  pathIds.forEach(pid=>{
+    const n = mapping[pid];
+    const m = normalizeNodeMessage(n);
+    if (m) messages.push(m);
+  });
+
+  // 3) 分支：每个主路径节点的 children 中，凡是不在主路径的子树，作为该节点的“回溯/折叠”收集
+  // 我们把这些分支的纯文本汇总到紧跟的该节点 message.previous[]，让 UI 可折叠查看
+  const idToIndex = new Map();
+  messages.forEach((m, i)=>{ idToIndex.set(m._nodeId, i); });
+
+  pathIds.forEach(pid=>{
+    const node = mapping[pid];
+    const children = Array.isArray(node.children) ? node.children : [];
+    const branchKids = children.filter(cid => !pathSet.has(cid));
+    if (!branchKids.length) return;
+    const branchTexts = [];
+    branchKids.forEach(bid => {
+      collectBranchTexts(mapping, bid, branchTexts);
+    });
+    const at = idToIndex.get(pid);
+    if (typeof at === 'number' && branchTexts.length) {
+      messages[at].previous = branchTexts.slice(0, 200); // 防炸
+    }
+  });
+
+  // 去除系统无内容的节点
+  const msgs = messages.filter(m => m.content && m.content.trim().length);
+
+  return {
+    id: obj.id || crypto.randomUUID(),
+    title, created,
+    messages: msgs,
+    models: new Set(msgs.map(m=>m.model).filter(Boolean))
+  };
+}
+
+function normalizeLinearMessage(m){
+  // 线性数组兜底
+  const role = m.role || (m.author?.role) || "assistant";
+  const parts = Array.isArray(m.content?.parts) ? m.content.parts.join("\n") : (m.content?.text || m.content || "");
+  const content = typeof parts === 'string' ? parts : JSON.stringify(parts);
+  const model = m.model || m.metadata?.model_slug || m.metadata?.model || "";
+  const ts = m.create_time || m.ts || 0;
+  return { role, content, model, ts, previous: [] };
+}
+
+function normalizeNodeMessage(node){
+  const msg = node.message;
+  if (!msg || !msg.author) return null;
+  const role = msg.author.role || "assistant";
+  if (!["user","assistant","system"].includes(role)) return null;
+
+  let text = "";
+  if (Array.isArray(msg.content?.parts)) text = msg.content.parts.join("\n");
+  else if (typeof msg.content?.text === 'string') text = msg.content.text;
+  else if (typeof msg.content === 'string') text = msg.content;
+
+  const model = msg.metadata?.model_slug || msg.metadata?.model || msg.model_slug || msg.model || "";
+  const ts = msg.create_time || node.create_time || 0;
+  return { role, content: text || "", model, ts, previous: [], _nodeId: node.id };
+}
+
+function collectBranchTexts(mapping, startId, out){
+  const stack = [startId];
+  while (stack.length){
+    const id = stack.pop();
+    const n = mapping[id];
+    if (!n) continue;
+    const m = normalizeNodeMessage(n);
+    if (m && m.content) out.push(`[${m.role}] ${m.content}`);
+    const kids = Array.isArray(n.children) ? n.children : [];
+    // 深度优先
+    for (let i=kids.length-1;i>=0;i--) stack.push(kids[i]);
+  }
+}
+
+// ============ 渲染 ============
+function render(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  const c = conversations[currentConvIndex];
+  if (!c){ chat.textContent="无会话"; return; }
+
+  // 过滤：模型 + 只看最近 N 条
+  let arr = c.messages.slice();
+  if (renderCache.model){
+    arr = arr.filter(m => (m.model||"").includes(renderCache.model));
+  }
+  if (renderCache.lastN && arr.length > renderCache.lastN){
+    arr = arr.slice(-renderCache.lastN);
+  }
+
+  // 显示过滤工具条
+  document.getElementById('filters').style.display = 'flex';
+
+  if (!arr.length){
+    const p = document.createElement('p');
+    p.className = 'dim';
+    p.textContent = '筛选后没有消息。调整“只看最近N条”或模型过滤试试。';
+    chat.appendChild(p);
+    return;
+  }
+
+  arr.forEach(m=>{
+    const div = document.createElement('div');
+    div.className = `msg ${clsByRole(m.role)}`;
+    div.innerText = m.content || '';
+    chat.appendChild(div);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const ts = m.ts ? new Date(m.ts*1000).toLocaleString() : '';
+    const model = m.model || '';
+    meta.innerHTML = `<span class="dim">${ts}</span><span class="model">${model||'—'}</span>`;
+    chat.appendChild(meta);
+
+    if (m.previous && m.previous.length){
+      const details = document.createElement('details');
+      details.className = 'branch';
+      const summary = document.createElement('summary');
+      summary.textContent = `回溯/分支（${m.previous.length} 条）`;
+      details.appendChild(summary);
+      const wrap = document.createElement('div');
+      wrap.style.marginTop = '.5rem';
+      m.previous.forEach(t=>{
+        const p = document.createElement('div');
+        p.style.margin = '.25rem 0';
+        p.textContent = t;
+        wrap.appendChild(p);
+      });
+      details.appendChild(wrap);
+      chat.appendChild(details);
+    }
   });
 }
 
-function exportChat(){
-  const html = document.documentElement.outerHTML;
-  const blob = new Blob([html], {type:"text/html"});
+function clsByRole(role){
+  if (role === 'user') return 'user';
+  if (role === 'system') return 'system';
+  return 'assistant';
+}
+
+// 过滤工具
+function applyN(){
+  const n = Number(document.getElementById('lastN').value)||0;
+  renderCache.lastN = n>0 ? n : 200;
+  render();
+}
+function buildModelFilter(){
+  const sel = document.getElementById('modelFilter');
+  sel.innerHTML = `<option value="">全部</option>`;
+  const c = conversations[currentConvIndex];
+  const arr = Array.from(c.models || []).sort();
+  arr.forEach(m=>{
+    const op = document.createElement('option');
+    op.value = m; op.textContent = m;
+    sel.appendChild(op);
+  });
+}
+function applyModelFilter(){
+  renderCache.model = document.getElementById('modelFilter').value || "";
+  render();
+}
+
+// 导出当前页面（所见即所得，含样式）
+function exportHTML(){
+  const blob = new Blob([document.documentElement.outerHTML], {type:'text/html'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'chat_export.html';
-  a.click();
+  a.href = url; a.download = 'chat_export.html'; a.click();
   URL.revokeObjectURL(url);
 }
 </script>
