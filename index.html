@@ -13,13 +13,13 @@
   --sidebar-bg-light:#ffffff; --sidebar-bg-dark:#232329;
   --panel-bg-light:#ffffffee; --panel-bg-dark:#232329ee;
   --bubble-max:86%;
-  --header-h:48px;   /* 真实高度运行时会覆盖 */
+  --header-h:48px; /* 运行时按实际高度覆盖 */
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg-light);color:var(--text-light);transition:.25s}
 body.dark{background:var(--bg-dark);color:var(--text-dark)}
 
-/* 更薄的顶栏 */
+/* 更薄的顶栏（含控制台开关） */
 header{
   position:sticky;top:0;z-index:70;backdrop-filter:saturate(180%) blur(8px);
   background:color-mix(in oklab,currentColor 6%,transparent);
@@ -40,7 +40,7 @@ button:active{transform:scale(.98)}
 input[type=file]{display:none}
 .icon{font-size:1rem}
 
-/* 固定控制台内容（开合由顶部按钮控制） */
+/* 控制台（固定，默认收起，通过顶栏按钮开合） */
 .panel-fixed{position:fixed;left:0;right:0;top:var(--header-h);z-index:60;display:none}
 .panel-fixed.open{display:block}
 .panel{background:var(--panel-bg-light);backdrop-filter:saturate(180%) blur(6px);border-bottom:1px solid var(--border)}
@@ -52,13 +52,13 @@ body.dark .badge{border-color:var(--border-dark)}
 .colorbox{display:flex;gap:.45rem;align-items:center}
 .colorbox label{font-size:.8rem;opacity:.85}
 .colorbox input[type=color]{width:30px;height:26px;padding:0;border:none;background:transparent}
-/* 控制台占位，避免遮住内容，JS 动态计算 */
+/* 控制台占位（动态高度） */
 .panel-spacer{height:0}
 
 /* 布局：侧边栏 + 内容 */
 .layout{display:flex}
 .sidebar{
-  position:fixed;left:0;top:var(--header-h); /* 展开控制台后 JS 再下推 */
+  position:fixed;left:0;top:var(--header-h);
   height:calc(100dvh - var(--header-h));
   width:280px;background:var(--sidebar-bg-light);color:inherit;border-right:1px solid var(--border);
   transform:translateX(-100%);transition:transform .25s ease;z-index:55;display:flex;flex-direction:column
@@ -78,36 +78,53 @@ body.dark .sidebar .side-head{border-bottom-color:var(--border-dark)}
   opacity:0;pointer-events:none;transition:.2s;z-index:50}
 .backdrop.show{opacity:1;pointer-events:auto}
 
-/* 主内容 */
-.container{padding:.8rem;display:flex;flex-direction:column;gap:.75rem;max-width:980px;margin:0 auto}
-.chat{display:flex;flex-direction:column;gap:.75rem}
-.msg{max-width:var(--bubble-max);padding:.58rem .78rem;border-radius:14px;white-space:pre-wrap;line-height:1.55}
-.user{align-self:flex-end;background:var(--user);color:#fff}
-.assistant{align-self:flex-start;background:var(--assistant);color:#fff}
-.system{align-self:center;background:var(--sys);color:#fff}
-/* 顶部小行：时间 / 模型 / 字数 */
-.meta-top{font-size:.75rem;opacity:.85;margin:.05rem .18rem;display:flex;gap:.45rem;flex-wrap:wrap}
-.name{font-size:.75rem;opacity:.8;margin:0 .18rem .18rem .18rem}
-.model-chip{padding:.08rem .4rem;border-radius:999px;background:var(--chip)}
+/* 主内容容器：宽度自适应但不影响两侧对齐 */
+.container{
+  padding:.8rem;display:flex;flex-direction:column;gap:.75rem;
+  width:100%;max-width:980px;margin:0 auto;
+}
+.chat{
+  display:flex;flex-direction:column;gap:.75rem;
+  width:100%;
+}
 
-/* 分支（回溯）显著区分 */
+/* 气泡与“固定左右”策略 */
+.msg{
+  max-width:var(--bubble-max);
+  padding:.58rem .78rem;border-radius:14px;white-space:pre-wrap;line-height:1.55
+}
+/* 关键：通过 margin 自动推挤，保证用户气泡永远贴右，助手贴左 —— 放大/缩小时不“挪边” */
+.msg.user{background:var(--user);color:#fff;margin-left:auto}
+.msg.assistant{background:var(--assistant);color:#fff;margin-right:auto}
+.msg.system{background:var(--sys);color:#fff;margin-left:auto;margin-right:auto}
+
+.name{font-size:.75rem;opacity:.8;margin:0 .18rem .18rem .18rem}
+.meta-top{font-size:.75rem;opacity:.85;margin:.05rem .18rem;display:flex;gap:.45rem;flex-wrap:wrap}
+.model-chip{padding:.08rem .4rem;border-radius:999px;background:var(--chip)}
+/* 与气泡对齐的“推挤” */
+.align-right{margin-left:auto;text-align:right}
+.align-left{margin-right:auto;text-align:left}
+.align-center{margin-left:auto;margin-right:auto;text-align:center}
+
+/* 分支（回溯）——默认收起，更明显 */
 .branch{
-  margin:.5rem 0 .2rem 0;border-radius:12px;padding:.5rem .6rem .55rem .6rem;
+  margin:.5rem 0 .2rem 0;border-radius:12px;
   background:color-mix(in oklab,currentColor 8%,transparent);
   border-left:4px solid var(--assistant);
   box-shadow:inset 0 0 0 1px color-mix(in oklab,currentColor 10%,transparent);
+  padding:.3rem .6rem;
 }
 body.dark .branch{
   background:color-mix(in oklab,currentColor 12%,transparent);
   border-left-color:var(--assistant);
 }
-.branch-head{
-  display:flex;align-items:center;gap:.5rem;font-size:.78rem;opacity:.9;margin-bottom:.45rem
+.branch summary{
+  cursor:pointer;list-style:none;display:flex;align-items:center;gap:.5rem;
+  font-size:.78rem;opacity:.95;padding:.25rem 0
 }
-.branch-badge{
-  font-size:.72rem;padding:.1rem .45rem;border-radius:999px;background:var(--chip)
-}
-.branch-thread{display:flex;flex-direction:column;gap:.55rem;margin-left:.25rem}
+.branch summary::-webkit-details-marker{display:none}
+.branch .branch-badge{font-size:.72rem;padding:.1rem .45rem;border-radius:999px;background:var(--chip)}
+.branch-thread{display:flex;flex-direction:column;gap:.55rem;margin:.4rem .1rem .55rem .25rem}
 .branch .msg{max-width:calc(var(--bubble-max) - 6%)} /* 分支略窄 */
 .branch .name,.branch .meta-top{opacity:.82}
 
@@ -151,7 +168,7 @@ body.dark .modal .row{border-color:var(--border-dark)}
   </div>
 </header>
 
-<!-- 控制台内容（固定，开合由顶栏按钮控制） -->
+<!-- 控制台（默认收起，无总字数显示） -->
 <div class="panel-fixed" id="panelWrap">
   <div class="panel">
     <div class="panel-content">
@@ -159,7 +176,6 @@ body.dark .modal .row{border-color:var(--border-dark)}
         <span class="badge">会话：</span>
         <select id="convListTop" onchange="selectConversation(this.value)"></select>
         <span class="badge" id="convMeta" title="创建时间 / 消息数 / 字数"></span>
-        <span class="badge">本会话总字数：<b id="totalChars">0</b></span>
       </div>
       <div class="group">
         <span class="badge">外观：</span>
@@ -183,7 +199,6 @@ body.dark .modal .row{border-color:var(--border-dark)}
     </div>
   </div>
 </div>
-<!-- 占位，JS 动态写入高度 -->
 <div id="panelSpacer" class="panel-spacer"></div>
 
 <div class="layout">
@@ -205,7 +220,7 @@ body.dark .modal .row{border-color:var(--border-dark)}
     <div id="chat" class="chat">
       <p style="opacity:.6;text-align:center">导入 ChatGPT 官方导出的会话 JSON（单个会话或 conversations.json）。</p>
     </div>
-    <footer class="small" style="opacity:.75">离线运行｜分支（回溯）显著区分｜导出仅当前或批量多文件</footer>
+    <footer class="small" style="opacity:.75">离线运行｜分支（回溯）默认收起｜导出仅当前或批量多文件</footer>
   </main>
 </div>
 
@@ -238,7 +253,7 @@ const toggleBtn = document.getElementById('togglePanelBtn');
 
 /* ==== 偏好 & 主题 ==== */
 let dark=false;
-const PREF_KEY='chatviewer_prefs_v8';
+const PREF_KEY='chatviewer_prefs_v9';
 const prefs=loadPrefs();
 applyPrefs();
 function toggleTheme(){try{dark=!dark;document.body.classList.toggle('dark',dark);prefs.dark=dark;savePrefs();}catch(e){showErr('切换主题失败：'+e.message)}}
@@ -246,7 +261,7 @@ function loadPrefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY))||{};}
 function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch(e){showErr('保存偏好失败：'+e.message)}}
 function setCSS(varName,val){document.documentElement.style.setProperty(varName,val);}
 
-/* UI 偏好回填 */
+/* 偏好回填 */
 function applyPrefs(){
   try{
     dark=!!prefs.dark;document.body.classList.toggle('dark',dark);
@@ -261,8 +276,8 @@ function applyPrefs(){
       const a=document.getElementById('nameAssistant'); if(a) a.value=prefs.names.assistant||'';
       const s=document.getElementById('nameSystem'); if(s) s.value=prefs.names.system||'';
     }
-    setPanelOpen(!!prefs.panelOpen); // 初始状态
-    setTimeout(()=>{updateLayoutHeights(); // 初次布局
+    setPanelOpen(!!prefs.panelOpen);
+    setTimeout(()=>{updateLayoutHeights();
       if(prefs.colors){
         if(prefs.colors.user)document.getElementById('cUser').value=prefs.colors.user;
         if(prefs.colors.assistant)document.getElementById('cAssistant').value=prefs.colors.assistant;
@@ -382,14 +397,21 @@ function buildBatchList(){
 function selectAllBatch(on){
   batchList.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=!!on);
 }
-function doBatchExport(){
+
+/* —— 真·批量导出（逐个触发，避免 iOS Safari 丢点击） —— */
+async function doBatchExport(){
   const ids=[...batchList.querySelectorAll('input[type=checkbox]:checked')].map(cb=>Number(cb.dataset.idx));
   if(!ids.length){ showErr('请先选择要导出的会话'); return; }
-  ids.forEach(id=> exportConversationByIndex(id));
+  // iOS/Safari 对连续触发下载比较敏感：逐个延时 450ms
+  for (const id of ids){
+    exportConversationByIndex(id);
+    // 小延时，确保下载对话框能依次弹出
+    await new Promise(r=>setTimeout(r, 450));
+  }
 }
 
 /* ==== 解析与状态 ==== */
-let conversations=[]; // {id,title,created,messages:[...],models:Set,totalChars:number}
+let conversations=[]; // {id,title,created,messages:[...],totalChars:number}
 let currentConvIndex=0;
 
 function handleImportedJSON(data){
@@ -414,7 +436,7 @@ function handleImportedJSON(data){
     setTopSelect('0');
     updateConvMeta();
     render();
-    setPanelOpen(prefs.panelOpen ?? true);
+    setPanelOpen(prefs.panelOpen ?? false);
     updateLayoutHeights();
   }catch(e){ showErr('导入失败：'+(e.message||e)); }
 }
@@ -470,7 +492,7 @@ function parseConversation(obj){
   if(!mapping||!current){
     if(Array.isArray(obj.messages)){
       const msgs=obj.messages.map(normalizeLinearMessage).filter(Boolean);
-      return {id:obj.id||crypto.randomUUID(),title,created,messages:msgs,models:new Set(msgs.map(m=>m.model).filter(Boolean))};
+      return {id:obj.id||crypto.randomUUID(),title,created,messages:msgs};
     }
     return null;
   }
@@ -494,7 +516,7 @@ function parseConversation(obj){
   });
 
   const msgs=messages.filter(m=>m.content&&m.content.trim().length);
-  return {id:obj.id||crypto.randomUUID(),title,created,messages:msgs,models:new Set(msgs.map(m=>m.model).filter(Boolean))};
+  return {id:obj.id||crypto.randomUUID(),title,created,messages:msgs};
 }
 function normalizeLinearMessage(m){
   const role=m.role||(m.author?.role)||"assistant";
@@ -527,7 +549,7 @@ function collectBranchObjects(mapping,startId,out){
   }
 }
 
-/* 元信息 / 字数统计（当前会话） */
+/* 元信息（当前会话） */
 function updateConvMeta(){
   const c=conversations[currentConvIndex];
   const meta=document.getElementById('convMeta');
@@ -535,8 +557,6 @@ function updateConvMeta(){
   const total = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
   c.totalChars = total;
   meta.textContent=`创建：${created}｜消息数：${c.messages.length}｜字数：${total}`;
-  document.getElementById('totalChars').textContent = total;
-
   // 同步侧边栏该项的字数显示
   const list=document.getElementById('convListSide');
   if(list.children[currentConvIndex]){
@@ -548,7 +568,7 @@ function updateConvMeta(){
   }
 }
 
-/* 渲染 */
+/* 渲染（含回溯默认收起 + 固定左右） */
 function render(){
   try{
     const chat=document.getElementById('chat'); chat.innerHTML='';
@@ -562,47 +582,43 @@ function render(){
     arr.forEach(m=>{
       const name=displayName(m.role);
       if(name){
-        const nm=document.createElement('div'); nm.className='name';
-        nm.style.alignSelf=(m.role==='user'?'flex-end':m.role==='assistant'?'flex-start':'center');
+        const nm=document.createElement('div'); nm.className='name ' + (m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center');
         nm.textContent=name; chat.appendChild(nm);
       }
 
-      const metaTop=document.createElement('div'); metaTop.className='meta-top';
+      const metaTop=document.createElement('div'); metaTop.className='meta-top ' + (m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center');
       const ts=m.ts?new Date(m.ts*1000).toLocaleString():'';
       const model=m.model||'';
       const count = (m.content||'').length;
       metaTop.innerHTML = `<span>${ts||''}</span>${model?`<span class="model-chip">${escapeHTML(model)}</span>`:''}<span>字数：${count}</span>`;
-      metaTop.style.alignSelf=(m.role==='user'?'flex-end':'flex-start');
       chat.appendChild(metaTop);
 
       const div=document.createElement('div'); div.className=`msg ${clsByRole(m.role)}`; div.innerText=m.content||''; chat.appendChild(div);
 
       if(Array.isArray(m.previous) && m.previous.length){
-        const box=document.createElement('div'); box.className='branch';
-        const head=document.createElement('div'); head.className='branch-head';
-        head.innerHTML=`<span class="branch-badge">分支</span><span>回溯共 ${m.previous.length} 条</span>`;
-        box.appendChild(head);
+        const details=document.createElement('details'); details.className='branch'; // 默认收起
+        const sum=document.createElement('summary');
+        sum.innerHTML=`<span class="branch-badge">分支</span><span>回溯共 ${m.previous.length} 条（点此展开）</span>`;
+        details.appendChild(sum);
 
         const thread=document.createElement('div'); thread.className='branch-thread';
         m.previous.forEach(b=>{
           const nm2=displayName(b.role);
           if(nm2){
-            const nm=document.createElement('div'); nm.className='name';
-            nm.style.alignSelf=(b.role==='user'?'flex-end':b.role==='assistant'?'flex-start':'center');
+            const nm=document.createElement('div'); nm.className='name ' + (b.role==='user'?'align-right':b.role==='assistant'?'align-left':'align-center');
             nm.textContent=nm2; thread.appendChild(nm);
           }
-          const top=document.createElement('div'); top.className='meta-top';
+          const top=document.createElement('div'); top.className='meta-top ' + (b.role==='user'?'align-right':'align-left');
           const ts2=b.ts?new Date(b.ts*1000).toLocaleString():'';
           const model2=b.model||'';
           const count2=(b.content||'').length;
           top.innerHTML = `<span>${ts2||''}</span>${model2?`<span class="model-chip">${escapeHTML(model2)}</span>`:''}<span>字数：${count2}</span>`;
-          top.style.alignSelf=(b.role==='user'?'flex-end':'flex-start');
           thread.appendChild(top);
 
           const bdiv=document.createElement('div'); bdiv.className=`msg ${clsByRole(b.role)}`; bdiv.innerText=b.content||''; thread.appendChild(bdiv);
         });
-        box.appendChild(thread);
-        chat.appendChild(box);
+        details.appendChild(thread);
+        chat.appendChild(details);
       }
     });
 
@@ -612,7 +628,7 @@ function render(){
 }
 function clsByRole(role){if(role==='user')return 'user';if(role==='system')return 'system';return 'assistant';}
 
-/* 导出：当前 & 批量 */
+/* 导出：当前 & 批量使用 */
 function exportCurrentConversation(){
   exportConversationByIndex(currentConvIndex);
 }
@@ -624,8 +640,8 @@ function exportConversationByIndex(idx){
     const cssVars = vars.map(v=>`${v}:${rootStyle.getPropertyValue(v).trim()}`).join(';');
     const esc = s => (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
     const bubble = (role, ts, model, text) => {
-      const align = role==='user'?'flex-end':(role==='assistant'?'flex-start':'center');
-      const meta = `<div class="meta-top" style="align-self:${align}"><span>${ts||''}</span>${model?`<span class="model-chip">${esc(model)}</span>`:''}<span>字数：${(text||'').length}</span></div>`;
+      const side = role==='user'?'align-right':role==='assistant'?'align-left':'align-center';
+      const meta = `<div class="meta-top ${side}"><span>${ts||''}</span>${model?`<span class="model-chip">${esc(model)}</span>`:''}<span>字数：${(text||'').length}</span></div>`;
       return `${meta}<div class="msg ${role}">${esc(text||'')}</div>`;
     };
     let body = '';
@@ -634,19 +650,19 @@ function exportConversationByIndex(idx){
       const nm = (function(role){
         const n=prefs.names||{}; if(role==='user')return n.user||''; if(role==='assistant')return n.assistant||''; if(role==='system')return n.system||''; return '';
       })(m.role);
-      if(nm){ body += `<div class="name" style="align-self:${m.role==='user'?'flex-end':(m.role==='assistant'?'flex-start':'center')}">${esc(nm)}</div>`; }
+      if(nm){ body += `<div class="name ${m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center'}">${esc(nm)}</div>`; }
       body += bubble(m.role, ts, m.model||'', m.content||'');
       if(Array.isArray(m.previous)&&m.previous.length){
-        body += `<div class="branch"><div class="branch-head"><span class="branch-badge">分支</span><span>回溯共 ${m.previous.length} 条</span></div><div class="branch-thread">`;
+        body += `<details class="branch"><summary><span class="branch-badge">分支</span><span>回溯共 ${m.previous.length} 条（点此展开）</span></summary><div class="branch-thread">`;
         m.previous.forEach(b=>{
           const ts2 = b.ts?new Date(b.ts*1000).toLocaleString():'';
           const nm2 = (function(role){
             const n=prefs.names||{}; if(role==='user')return n.user||''; if(role==='assistant')return n.assistant||''; if(role==='system')return n.system||''; return '';
           })(b.role);
-          if(nm2){ body += `<div class="name" style="align-self:${b.role==='user'?'flex-end':(b.role==='assistant'?'flex-start':'center')}">${esc(nm2)}</div>`; }
+          if(nm2){ body += `<div class="name ${b.role==='user'?'align-right':'align-left'}">${esc(nm2)}</div>`; }
           body += bubble(b.role, ts2, b.model||'', b.content||'');
         });
-        body += `</div></div>`;
+        body += `</div></details>`;
       }
     });
     const html = `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -657,15 +673,21 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Aria
 .container{padding:1rem;max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:.8rem}
 .chat{display:flex;flex-direction:column;gap:.8rem}
 .msg{max-width:var(--bubble-max);padding:.65rem .85rem;border-radius:14px;white-space:pre-wrap;line-height:1.55}
-.user{align-self:flex-end;background:var(--user);color:#fff}
-.assistant{align-self:flex-start;background:var(--assistant);color:#fff}
-.system{align-self:center;background:var(--sys);color:#fff}
+.msg.user{background:var(--user);color:#fff;margin-left:auto}
+.msg.assistant{background:var(--assistant);color:#fff;margin-right:auto}
+.msg.system{background:var(--sys);color:#fff;margin-left:auto;margin-right:auto}
 .name{font-size:.78rem;opacity:.8;margin:0 .2rem .2rem .2rem}
 .meta-top{font-size:.78rem;opacity:.85;margin:.1rem .2rem;display:flex;gap:.5rem;flex-wrap:wrap}
+.align-right{margin-left:auto;text-align:right}
+.align-left{margin-right:auto;text-align:left}
+.align-center{margin-left:auto;margin-right:auto;text-align:center}
 .model-chip{padding:.1rem .45rem;border-radius:999px;background:var(--chip)}
-.branch{margin:.5rem 0 .2rem 0;border-radius:12px;padding:.5rem .6rem .55rem .6rem;border-left:4px solid var(--assistant);
+.branch{margin:.5rem 0 .2rem 0;border-radius:12px;padding:.3rem .6rem;border-left:4px solid var(--assistant);
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);background:#fff6}
-.branch-thread{display:flex;flex-direction:column;gap:.55rem;margin-left:.25rem}
+.branch-thread{display:flex;flex-direction:column;gap:.55rem;margin:.4rem .1rem .55rem .25rem}
+.branch summary{cursor:pointer;list-style:none;display:flex;gap:.5rem;align-items:center}
+.branch summary::-webkit-details-marker{display:none}
+.branch .branch-badge{font-size:.72rem;padding:.1rem .45rem;border-radius:999px;background:var(--chip)}
 </style></head><body>
 <div class="container">
   <h2 style="margin:.2rem 0 1rem 0">${esc(c.title||'(无标题)')}</h2>
@@ -673,12 +695,14 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Aria
 </div></body></html>`;
     const blob=new Blob([html],{type:'text/html'});
     const url=URL.createObjectURL(blob); const a=document.createElement('a');
-    a.href=url; a.download=`${(c.title||'chat_export').replace(/[\\/:*?"<>|]/g,'_')}.html`; a.click(); URL.revokeObjectURL(url);
+    a.href=url; a.download=`${(c.title||'chat_export').replace(/[\\/:*?"<>|]/g,'_')}.html`; 
+    // 用 setTimeout 保证 iOS 正常触发下载
+    setTimeout(()=>{ a.click(); URL.revokeObjectURL(url); }, 0);
   }catch(e){showErr('导出失败：'+e.message)}
 }
 
 /* 工具 */
-function escapeHTML(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function escapeHTML(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 
 /* 尺寸变化时更新布局 */
 window.addEventListener('resize', updateLayoutHeights);
