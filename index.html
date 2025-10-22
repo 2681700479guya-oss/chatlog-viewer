@@ -323,7 +323,28 @@
             background: var(--border-color);
             border-radius: 3px;
         }
-    </style>
+    /* 🔧 修复移动端侧边栏与主内容显示问题 */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    position: relative;
+    transform: none !important;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .main-content {
+    width: 100%;
+  }
+}
+
+/* 🔧 让消息内容在小屏幕上自动换行，不溢出 */
+.message-content {
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}</style>
 </head>
 <body>
     <div class="app">
