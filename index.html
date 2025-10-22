@@ -10,56 +10,98 @@
   --text-light:#0f1115; --text-dark:#e7e7ea;
   --user:#0a84ff; --assistant:#5e5e66; --sys:#9b59b6;
   --chip:#d0d5dd22; --border:#00000014; --border-dark:#ffffff22;
+  --bubble-max:86%;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg-light);color:var(--text-light);transition:.25s}
 body.dark{background:var(--bg-dark);color:var(--text-dark)}
-header{position:sticky;top:0;backdrop-filter:saturate(180%) blur(8px);
-  background:color-mix(in oklab,currentColor 5%,transparent);
+
+/* 顶栏 */
+header{position:sticky;top:0;z-index:20;backdrop-filter:saturate(180%) blur(8px);
+  background:color-mix(in oklab,currentColor 6%,transparent);
   display:flex;gap:.6rem;align-items:center;justify-content:space-between;
   padding:.6rem .9rem;border-bottom:1px solid var(--border)}
 body.dark header{border-bottom-color:var(--border-dark)}
-h1{font-size:1rem;margin:0;font-weight:600}
+h1{font-size:1rem;margin:0;font-weight:600;display:flex;gap:.5rem;align-items:center}
 .controls{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-button,select,input[type="number"]{
+button,select,input[type="number"],input[type="range"]{
   padding:.45rem .7rem;border-radius:9px;border:1px solid var(--border);
   background:#fff;color:#111;cursor:pointer;font-size:.9rem
 }
-body.dark button,body.dark select,body.dark input[type="number"]{
+body.dark button,body.dark select,body.dark input[type="number"],body.dark input[type="range"]{
   background:#2a2a31;color:var(--text-dark);border-color:var(--border-dark)
 }
 button:active{transform:scale(.98)}
 input[type=file]{display:none}
+.icon{font-size:1.1rem}
 
-.toolbar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+/* 布局：侧边栏 + 内容 */
+.layout{display:flex}
+.sidebar{
+  position:fixed;left:0;top:0;height:100dvh;width:280px;background:inherit;
+  border-right:1px solid var(--border);transform:translateX(-100%);
+  transition:transform .25s ease;z-index:30;display:flex;flex-direction:column
+}
+body.dark .sidebar{border-right-color:var(--border-dark)}
+.sidebar.open{transform:translateX(0)}
+.sidebar header{position:sticky;top:0;padding:.7rem .9rem;border:none}
+.sidebar .list{overflow:auto;padding:.5rem}
+.conv-item{
+  padding:.6rem .7rem;border-radius:10px;margin:.25rem 0;cursor:pointer;
+  border:1px solid transparent
+}
+.conv-item:hover{background:color-mix(in oklab,currentColor 4%,transparent)}
+.conv-item.active{border-color:var(--border-dark)}
+.meta-mini{font-size:.75rem;opacity:.7;margin-top:.2rem}
+
+/* 遮罩（移动端抽屉） */
+.backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.2);backdrop-filter:blur(1px);
+  opacity:0;pointer-events:none;transition:.2s;z-index:25
+}
+.backdrop.show{opacity:1;pointer-events:auto}
+
+/* 主内容 */
+.container{padding:1rem;display:flex;flex-direction:column;gap:.9rem;max-width:980px;margin:0 auto}
+.selector, .toolbar, .customize{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
 .badge{padding:.2rem .5rem;border-radius:7px;border:1px solid var(--border);
   font-size:.78rem;opacity:.9}
 body.dark .badge{border-color:var(--border-dark)}
-.container{padding:1rem;display:flex;flex-direction:column;gap:.9rem}
-.selector{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
 hr{border:none;height:1px;background:var(--border)}
 body.dark hr{background:var(--border-dark)}
 
+/* 聊天气泡 */
 .chat{display:flex;flex-direction:column;gap:.8rem}
-.msg{max-width:86%;padding:.65rem .85rem;border-radius:14px;white-space:pre-wrap;line-height:1.55}
+.msg{max-width:var(--bubble-max);padding:.65rem .85rem;border-radius:14px;white-space:pre-wrap;line-height:1.55}
 .user{align-self:flex-end;background:var(--user);color:#fff}
 .assistant{align-self:flex-start;background:var(--assistant);color:#fff}
 .system{align-self:center;background:var(--sys);color:#fff}
 .meta{display:flex;justify-content:space-between;gap:.6rem;margin-top:.35rem;font-size:.78rem;opacity:.9}
 .model{padding:.15rem .5rem;border-radius:999px;background:var(--chip)}
-.branch{
-  margin-top:.5rem;border:1px dashed var(--border);border-radius:10px;padding:.5rem
-}
+.branch{margin-top:.5rem;border:1px dashed var(--border);border-radius:10px;padding:.5rem}
 body.dark .branch{border-color:var(--border-dark)}
 .branch>summary{cursor:pointer;font-size:.85rem;opacity:.9}
 .dim{opacity:.6}
 footer{padding:1rem 1rem 2rem;color:inherit;opacity:.8;text-align:center}
 .small{font-size:.82rem}
+
+/* 自定义颜色控件 */
+.colorbox{display:flex;gap:.5rem;align-items:center}
+.colorbox label{font-size:.82rem;opacity:.85}
+.colorbox input[type=color]{width:32px;height:28px;padding:0;border:none;background:transparent}
+
+/* 桌面端固定侧栏（可选，宽屏才展示） */
+@media (min-width:1100px){
+  .sidebar{transform:translateX(0);position:sticky;top:0;height:100vh}
+  .backdrop{display:none}
+  .layout{gap:0}
+  .container{margin-left:280px}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>📄 ChatGPT 聊天记录查看器</h1>
+  <h1><button id="burger" class="icon" aria-label="菜单">☰</button>📄 ChatGPT 聊天记录查看器</h1>
   <div class="controls">
     <input id="file" type="file" accept=".json" />
     <button onclick="pickFile()">导入</button>
@@ -68,35 +110,127 @@ footer{padding:1rem 1rem 2rem;color:inherit;opacity:.8;text-align:center}
   </div>
 </header>
 
-<div class="container">
-  <div class="selector" id="convSelector" style="display:none">
-    <span class="badge">选择会话：</span>
-    <select id="convList" onchange="selectConversation(this.value)"></select>
-    <span class="badge" id="convMeta" title="创建时间 / 消息数"></span>
-  </div>
+<div class="layout">
+  <!-- 侧边栏 -->
+  <aside class="sidebar" id="sidebar">
+    <header>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+        <strong>会话列表</strong>
+        <button id="closeSidebar">关闭</button>
+      </div>
+      <div class="small dim">从 conversations.json 或单会话导入后显示</div>
+    </header>
+    <div class="list" id="convListSide"></div>
+  </aside>
+  <div class="backdrop" id="backdrop"></div>
 
-  <div class="toolbar" id="filters" style="display:none">
-    <span class="badge">只看最近</span>
-    <input type="number" id="lastN" min="1" step="1" value="200" style="width:6rem" />
-    <span class="badge">条</span>
-    <button onclick="applyN()">应用</button>
-    <span class="badge">按模型过滤：</span>
-    <select id="modelFilter" onchange="applyModelFilter()">
-      <option value="">全部</option>
-    </select>
-  </div>
+  <!-- 主内容 -->
+  <main class="container">
+    <div class="selector" id="convSelector" style="display:none">
+      <span class="badge">当前会话：</span>
+      <select id="convListTop" onchange="selectConversation(this.value)"></select>
+      <span class="badge" id="convMeta" title="创建时间 / 消息数"></span>
+    </div>
 
-  <div id="chat" class="chat">
-    <p class="dim" style="text-align:center">导入 ChatGPT 官方导出的会话 JSON（单个会话或 conversations.json）。</p>
-  </div>
+    <div class="toolbar" id="filters" style="display:none">
+      <span class="badge">只看最近</span>
+      <input type="number" id="lastN" min="1" step="1" value="200" style="width:6rem" />
+      <span class="badge">条</span>
+      <button onclick="applyN()">应用</button>
+      <span class="badge">按模型过滤：</span>
+      <select id="modelFilter" onchange="applyModelFilter()">
+        <option value="">全部</option>
+      </select>
+    </div>
+
+    <!-- 自定义区：颜色 & 宽度 -->
+    <div class="customize" id="customizeBar" style="display:none">
+      <span class="badge">外观：</span>
+      <div class="colorbox">
+        <label>用户</label><input type="color" id="cUser">
+        <label>助手</label><input type="color" id="cAssistant">
+        <label>系统</label><input type="color" id="cSystem">
+      </div>
+      <span class="badge">气泡宽度：</span>
+      <input type="range" id="bubbleWidth" min="60" max="100" value="86" oninput="setBubbleWidth(this.value)">
+      <span id="bubbleVal" class="small dim">86%</span>
+      <button onclick="resetTheme()">恢复默认</button>
+    </div>
+
+    <div id="chat" class="chat">
+      <p class="dim" style="text-align:center">导入 ChatGPT 官方导出的会话 JSON（单个会话或 conversations.json）。</p>
+    </div>
+    <footer class="small">离线运行｜解析 mapping 树，主路径呈现，分支折叠｜颜色与宽度偏好会保存到本地</footer>
+  </main>
 </div>
 
-<footer class="small">本工具离线运行，解析 ChatGPT 官方导出（mapping 树），默认展示“主路径”对话，分支作为“回溯”可折叠查看。</footer>
-
 <script>
-// ============ 主题 ============
+// ============ 主题 + 偏好 ============
 let dark = false;
-function toggleTheme(){ dark=!dark; document.body.classList.toggle('dark', dark); }
+const PREF_KEY = 'chatviewer_prefs_v2';
+const prefs = loadPrefs();
+
+applyPrefs();
+
+function toggleTheme(){ 
+  dark=!dark; 
+  document.body.classList.toggle('dark', dark); 
+  prefs.dark = dark; savePrefs(); 
+}
+
+function loadPrefs(){
+  try{ return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; }catch{ return {}; }
+}
+function savePrefs(){ localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); }
+function applyPrefs(){
+  dark = !!prefs.dark; document.body.classList.toggle('dark', dark);
+  if (prefs.colors){
+    if (prefs.colors.user) setCSS('--user', prefs.colors.user);
+    if (prefs.colors.assistant) setCSS('--assistant', prefs.colors.assistant);
+    if (prefs.colors.sys) setCSS('--sys', prefs.colors.sys);
+  }
+  if (prefs.bubble){ setCSS('--bubble-max', prefs.bubble+'%'); }
+  // 初始化控件值
+  setTimeout(()=>{
+    if (prefs.colors){
+      if (prefs.colors.user) document.getElementById('cUser').value = prefs.colors.user;
+      if (prefs.colors.assistant) document.getElementById('cAssistant').value = prefs.colors.assistant;
+      if (prefs.colors.sys) document.getElementById('cSystem').value = prefs.colors.sys;
+    }
+    if (prefs.bubble){
+      document.getElementById('bubbleWidth').value = Number(prefs.bubble);
+      document.getElementById('bubbleVal').textContent = `${prefs.bubble}%`;
+    }
+  },0);
+}
+function setCSS(varName, val){ document.documentElement.style.setProperty(varName, val); }
+function resetTheme(){
+  ['--user','--assistant','--sys'].forEach(v=>document.documentElement.style.removeProperty(v));
+  document.getElementById('cUser').value = '#0a84ff';
+  document.getElementById('cAssistant').value = '#5e5e66';
+  document.getElementById('cSystem').value = '#9b59b6';
+  setBubbleWidth(86);
+  prefs.colors = { user:'#0a84ff', assistant:'#5e5e66', sys:'#9b59b6' };
+  prefs.bubble = 86;
+  savePrefs();
+}
+document.getElementById('cUser').addEventListener('input', e=>{
+  setCSS('--user', e.target.value);
+  prefs.colors = prefs.colors || {}; prefs.colors.user = e.target.value; savePrefs();
+});
+document.getElementById('cAssistant').addEventListener('input', e=>{
+  setCSS('--assistant', e.target.value);
+  prefs.colors = prefs.colors || {}; prefs.colors.assistant = e.target.value; savePrefs();
+});
+document.getElementById('cSystem').addEventListener('input', e=>{
+  setCSS('--sys', e.target.value);
+  prefs.colors = prefs.colors || {}; prefs.colors.sys = e.target.value; savePrefs();
+});
+function setBubbleWidth(val){
+  setCSS('--bubble-max', `${val}%`);
+  document.getElementById('bubbleVal').textContent = `${val}%`;
+  prefs.bubble = Number(val); savePrefs();
+}
 
 // ============ 文件选择 ============
 function pickFile(){ document.getElementById('file').click(); }
@@ -108,51 +242,83 @@ document.getElementById('file').addEventListener('change', async (e)=>{
   handleImportedJSON(data);
 });
 
+// ============ 侧边栏开合 ============
+const sidebar = document.getElementById('sidebar');
+const backdrop = document.getElementById('backdrop');
+document.getElementById('burger').addEventListener('click', ()=> openSidebar(true));
+document.getElementById('closeSidebar').addEventListener('click', ()=> openSidebar(false));
+backdrop.addEventListener('click', ()=> openSidebar(false));
+function openSidebar(show){ 
+  if (window.matchMedia('(min-width:1100px)').matches) return; // 宽屏不需要动画
+  sidebar.classList.toggle('open', show); 
+  backdrop.classList.toggle('show', show);
+}
+
 // ============ 解析入口 ============
-let conversations = []; // {id,title,created,messages:[{role,content,model,ts}], models:Set}
+let conversations = []; // {id,title,created,messages:[{role,content,model,ts,_nodeId,previous:[]}], models:Set}
 let currentConvIndex = 0;
 let renderCache = { lastN: 200, model: "" };
 
 function handleImportedJSON(data){
-  // 可能是：1) 单个会话对象（含 mapping） 2) conversations.json 中的数组/对象列表
   conversations = [];
 
   if (Array.isArray(data)) {
-    // conversations.json（数组）
     data.forEach(obj => { const c = parseConversation(obj); if(c) conversations.push(c); });
   } else if (data && typeof data === 'object') {
     if (data.items && Array.isArray(data.items)) {
-      // 某些导出是 { items:[conv, conv,...] }
       data.items.forEach(obj => { const c = parseConversation(obj); if(c) conversations.push(c); });
     } else {
-      // 单会话
       const c = parseConversation(data);
       if (c) conversations.push(c);
     }
   }
 
   if (!conversations.length){
-    alert('没解析到会话。请确认：\n- 选择的是单个会话 JSON 或 conversations.json\n- 如果你拿到的是 ZIP，请先在“文件”App里解压，再选 JSON');
+    alert('没解析到会话。确认选择的是解压后的 conversations.json 或某个 conversations/*.json');
     return;
   }
 
-  // 填会话下拉
+  // 顶部下拉
   const selWrap = document.getElementById('convSelector');
-  const sel = document.getElementById('convList');
-  sel.innerHTML = '';
+  const selTop = document.getElementById('convListTop');
+  selTop.innerHTML = '';
   conversations.forEach((c, idx)=>{
     const opt = document.createElement('option');
     opt.value = String(idx);
     opt.textContent = c.title || `(无标题) ${idx+1}`;
-    sel.appendChild(opt);
+    selTop.appendChild(opt);
   });
   selWrap.style.display = conversations.length>1 ? 'flex' : 'none';
 
+  // 侧边栏列表
+  buildSidebarList();
+
   currentConvIndex = 0;
-  sel.value = '0';
+  selTop.value = '0';
   updateConvMeta();
   buildModelFilter();
+  document.getElementById('filters').style.display = 'flex';
+  document.getElementById('customizeBar').style.display = 'flex';
   render();
+}
+
+function buildSidebarList(){
+  const list = document.getElementById('convListSide');
+  list.innerHTML = '';
+  conversations.forEach((c, idx)=>{
+    const item = document.createElement('div');
+    item.className = 'conv-item'+(idx===currentConvIndex?' active':'');
+    item.innerHTML = `<div>${escapeHTML(c.title||`(无标题) ${idx+1}`)}</div>
+      <div class="meta-mini">消息 ${c.messages.length}${c.created?` · ${new Date(c.created*1000).toLocaleDateString()}`:''}</div>`;
+    item.onclick = ()=>{
+      currentConvIndex = idx;
+      selectConversation(String(idx));
+      openSidebar(false);
+      [...list.children].forEach(el=>el.classList.remove('active'));
+      item.classList.add('active');
+    };
+    list.appendChild(item);
+  });
 }
 
 function selectConversation(idxStr){
@@ -162,6 +328,7 @@ function selectConversation(idxStr){
   document.getElementById('modelFilter').value = "";
   updateConvMeta();
   buildModelFilter();
+  buildSidebarList();
   render();
 }
 
@@ -172,16 +339,14 @@ function updateConvMeta(){
   meta.textContent = `创建：${created}｜消息数：${c.messages.length}`;
 }
 
-// ============ 解析单个会话（mapping → 主路径 + 分支） ============
+// ============ 解析 mapping ============
 function parseConversation(obj){
-  // 粗兼容不同导出版本
   const title = obj.title || obj.gist || obj.name || '';
   const created = obj.create_time || obj.update_time || obj.created || 0;
   const mapping = obj.mapping;
   const current = obj.current_node;
 
   if (!mapping || !current) {
-    // 某些早期导出可能有 linear "messages"
     if (Array.isArray(obj.messages)) {
       const msgs = obj.messages.map(normalizeLinearMessage).filter(Boolean);
       return { id: obj.id || crypto.randomUUID(), title, created, messages: msgs, models: new Set(msgs.map(m=>m.model).filter(Boolean)) };
@@ -189,27 +354,22 @@ function parseConversation(obj){
     return null;
   }
 
-  // 1) 沿 current_node 回溯到根，得到“主路径”
   const pathIds = [];
   let nodeId = current;
   while (nodeId && mapping[nodeId]) {
     pathIds.push(nodeId);
     nodeId = mapping[nodeId].parent || null;
   }
-  pathIds.reverse(); // 根→current
+  pathIds.reverse();
 
-  // 2) 主路径消息提取
   const messages = [];
   const pathSet = new Set(pathIds);
-
   pathIds.forEach(pid=>{
     const n = mapping[pid];
     const m = normalizeNodeMessage(n);
     if (m) messages.push(m);
   });
 
-  // 3) 分支：每个主路径节点的 children 中，凡是不在主路径的子树，作为该节点的“回溯/折叠”收集
-  // 我们把这些分支的纯文本汇总到紧跟的该节点 message.previous[]，让 UI 可折叠查看
   const idToIndex = new Map();
   messages.forEach((m, i)=>{ idToIndex.set(m._nodeId, i); });
 
@@ -219,18 +379,14 @@ function parseConversation(obj){
     const branchKids = children.filter(cid => !pathSet.has(cid));
     if (!branchKids.length) return;
     const branchTexts = [];
-    branchKids.forEach(bid => {
-      collectBranchTexts(mapping, bid, branchTexts);
-    });
+    branchKids.forEach(bid => { collectBranchTexts(mapping, bid, branchTexts); });
     const at = idToIndex.get(pid);
     if (typeof at === 'number' && branchTexts.length) {
-      messages[at].previous = branchTexts.slice(0, 200); // 防炸
+      messages[at].previous = branchTexts.slice(0, 300);
     }
   });
 
-  // 去除系统无内容的节点
   const msgs = messages.filter(m => m.content && m.content.trim().length);
-
   return {
     id: obj.id || crypto.randomUUID(),
     title, created,
@@ -240,7 +396,6 @@ function parseConversation(obj){
 }
 
 function normalizeLinearMessage(m){
-  // 线性数组兜底
   const role = m.role || (m.author?.role) || "assistant";
   const parts = Array.isArray(m.content?.parts) ? m.content.parts.join("\n") : (m.content?.text || m.content || "");
   const content = typeof parts === 'string' ? parts : JSON.stringify(parts);
@@ -248,7 +403,6 @@ function normalizeLinearMessage(m){
   const ts = m.create_time || m.ts || 0;
   return { role, content, model, ts, previous: [] };
 }
-
 function normalizeNodeMessage(node){
   const msg = node.message;
   if (!msg || !msg.author) return null;
@@ -264,7 +418,6 @@ function normalizeNodeMessage(node){
   const ts = msg.create_time || node.create_time || 0;
   return { role, content: text || "", model, ts, previous: [], _nodeId: node.id };
 }
-
 function collectBranchTexts(mapping, startId, out){
   const stack = [startId];
   while (stack.length){
@@ -274,19 +427,17 @@ function collectBranchTexts(mapping, startId, out){
     const m = normalizeNodeMessage(n);
     if (m && m.content) out.push(`[${m.role}] ${m.content}`);
     const kids = Array.isArray(n.children) ? n.children : [];
-    // 深度优先
     for (let i=kids.length-1;i>=0;i--) stack.push(kids[i]);
   }
 }
 
-// ============ 渲染 ============
+// ============ 渲染 =============
 function render(){
   const chat = document.getElementById('chat');
   chat.innerHTML = '';
   const c = conversations[currentConvIndex];
   if (!c){ chat.textContent="无会话"; return; }
 
-  // 过滤：模型 + 只看最近 N 条
   let arr = c.messages.slice();
   if (renderCache.model){
     arr = arr.filter(m => (m.model||"").includes(renderCache.model));
@@ -294,9 +445,6 @@ function render(){
   if (renderCache.lastN && arr.length > renderCache.lastN){
     arr = arr.slice(-renderCache.lastN);
   }
-
-  // 显示过滤工具条
-  document.getElementById('filters').style.display = 'flex';
 
   if (!arr.length){
     const p = document.createElement('p');
@@ -316,7 +464,7 @@ function render(){
     meta.className = 'meta';
     const ts = m.ts ? new Date(m.ts*1000).toLocaleString() : '';
     const model = m.model || '';
-    meta.innerHTML = `<span class="dim">${ts}</span><span class="model">${model||'—'}</span>`;
+    meta.innerHTML = `<span class="dim">${ts}</span><span class="model">${escapeHTML(model||'—')}</span>`;
     chat.appendChild(meta);
 
     if (m.previous && m.previous.length){
@@ -345,7 +493,6 @@ function clsByRole(role){
   return 'assistant';
 }
 
-// 过滤工具
 function applyN(){
   const n = Number(document.getElementById('lastN').value)||0;
   renderCache.lastN = n>0 ? n : 200;
@@ -367,14 +514,22 @@ function applyModelFilter(){
   render();
 }
 
-// 导出当前页面（所见即所得，含样式）
+// ============ 导出（到文件App 的“下载”） ============
 function exportHTML(){
+  // 所见即所得导出（包含当前颜色与宽度设置）
   const blob = new Blob([document.documentElement.outerHTML], {type:'text/html'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'chat_export.html'; a.click();
   URL.revokeObjectURL(url);
 }
+
+// ============ 小工具 ============
+function escapeHTML(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[m])); }
+
+// 初次显示自定义面板状态（和过滤条）
+document.getElementById('filters').style.display = 'none';
+document.getElementById('customizeBar').style.display = 'none';
 </script>
 </body>
 </html>
