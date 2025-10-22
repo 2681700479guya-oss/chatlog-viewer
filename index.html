@@ -13,20 +13,25 @@
   --sidebar-bg-light:#ffffff; --sidebar-bg-dark:#232329;
   --panel-bg-light:#ffffffee; --panel-bg-dark:#232329ee;
   --bubble-max:86%;
-  --header-h:56px;
+  --header-h:56px;            /* 将在运行时被真实高度覆盖 */
   --panel-toggle-h:52px;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg-light);color:var(--text-light);transition:.25s}
 body.dark{background:var(--bg-dark);color:var(--text-dark)}
+
 /* 顶栏 */
-header{position:sticky;top:0;z-index:60;backdrop-filter:saturate(180%) blur(8px);
+header{
+  position:sticky;top:0;z-index:60;backdrop-filter:saturate(180%) blur(8px);
   background:color-mix(in oklab,currentColor 6%,transparent);
   display:flex;gap:.6rem;align-items:center;justify-content:space-between;
-  padding:.6rem .9rem;border-bottom:1px solid var(--border);min-height:var(--header-h)}
+  padding:.6rem .9rem;border-bottom:1px solid var(--border)
+}
 body.dark header{border-bottom-color:var(--border-dark)}
 h1{font-size:1rem;margin:0;font-weight:600;display:flex;gap:.5rem;align-items:center}
-.controls{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.controls{
+  display:flex;gap:.4rem;align-items:center;white-space:nowrap;flex-wrap:nowrap; /* 一排不换行 */
+}
 button,select,input[type="range"],input[type="text"]{
   padding:.45rem .7rem;border-radius:9px;border:1px solid var(--border);
   background:#fff;color:#111;cursor:pointer;font-size:.9rem
@@ -42,10 +47,7 @@ input[type=file]{display:none}
 .panel-fixed{position:fixed;left:0;right:0;top:var(--header-h);z-index:50}
 .panel{background:var(--panel-bg-light);backdrop-filter:saturate(180%) blur(6px);border-bottom:1px solid var(--border)}
 body.dark .panel{background:var(--panel-bg-dark);border-bottom-color:var(--border-dark)}
-.panel-toggle{
-  height:var(--panel-toggle-h);display:flex;align-items:center;justify-content:space-between;
-  padding:0 .9rem
-}
+.panel-toggle{height:var(--panel-toggle-h);display:flex;align-items:center;justify-content:space-between;padding:0 .9rem}
 .panel-toggle .hint{font-size:.88rem;opacity:.8}
 .panel-content{display:none;padding:.7rem .9rem;border-top:1px solid var(--border)}
 body.dark .panel-content{border-top-color:var(--border-dark)}
@@ -56,13 +58,13 @@ body.dark .badge{border-color:var(--border-dark)}
 .colorbox{display:flex;gap:.5rem;align-items:center}
 .colorbox label{font-size:.82rem;opacity:.85}
 .colorbox input[type=color]{width:32px;height:28px;padding:0;border:none;background:transparent}
-/* 面板占位，避免内容被遮住（JS动态设置高度） */
+/* 面板占位，避免内容被遮住（JS 动态设置高度） */
 .panel-spacer{height:0}
 
 /* 布局：侧边栏 + 内容 */
 .layout{display:flex}
 .sidebar{
-  position:fixed;left:0;top:calc(var(--header-h) + var(--panel-toggle-h)); /* 仅切到最小高度时的基准 */
+  position:fixed;left:0;top:calc(var(--header-h) + var(--panel-toggle-h)); /* 基线，展开时 JS 会再下推 */
   height:calc(100dvh - var(--header-h) - var(--panel-toggle-h));
   width:280px;background:var(--sidebar-bg-light);color:inherit;border-right:1px solid var(--border);
   transform:translateX(-100%);transition:transform .25s ease;z-index:45;display:flex;flex-direction:column
@@ -113,7 +115,7 @@ body.dark .branch{border-color:var(--border-dark)}
 </style>
 </head>
 <body>
-<header>
+<header id="siteHeader">
   <h1><button id="burger" class="icon" aria-label="菜单">☰</button>📄 ChatGPT 聊天记录查看器</h1>
   <div class="controls">
     <input id="file" type="file" accept=".json" />
@@ -187,16 +189,17 @@ body.dark .branch{border-color:var(--border-dark)}
 <div id="err" class="errbar"></div>
 
 <script>
-/* ==== 基础：抓元素 / 错误提示 ==== */
+/* ==== 元素 & 错误提示 ==== */
 const panelEl = document.getElementById('topPanel');
 const toggleBtn = document.getElementById('togglePanelBtn');
 const panelSpacer = document.getElementById('panelSpacer');
 const errBar = document.getElementById('err');
+const siteHeader = document.getElementById('siteHeader');
 function showErr(msg){ errBar.textContent = msg; errBar.classList.add('show'); setTimeout(()=>errBar.classList.remove('show'), 6000); }
 
 /* ==== 偏好 & 主题 ==== */
 let dark=false;
-const PREF_KEY='chatviewer_prefs_v6';
+const PREF_KEY='chatviewer_prefs_v7';
 const prefs=loadPrefs();
 applyPrefs();
 function toggleTheme(){try{dark=!dark;document.body.classList.toggle('dark',dark);prefs.dark=dark;savePrefs();}catch(e){showErr('切换主题失败：'+e.message)}}
@@ -218,19 +221,8 @@ function applyPrefs(){
       const s=document.getElementById('nameSystem'); if(s) s.value=prefs.names.system||'';
     }
     setPanelOpen(!!prefs.panelOpen);
-    setTimeout(()=>{
-      if(prefs.colors){
-        if(prefs.colors.user)document.getElementById('cUser').value=prefs.colors.user;
-        if(prefs.colors.assistant)document.getElementById('cAssistant').value=prefs.colors.assistant;
-        if(prefs.colors.sys)document.getElementById('cSystem').value=prefs.colors.sys;
-      }
-      if(prefs.bubble){
-        document.getElementById('bubbleWidth').value=Number(prefs.bubble);
-        document.getElementById('bubbleVal').textContent=`${prefs.bubble}%`;
-      }
-      setSidebarTop(); // 侧边栏高度对齐
-      updatePanelSpacer();
-    },0);
+    // 初次布局计算
+    setTimeout(()=>{updateLayoutHeights();},0);
   }catch(e){showErr('应用偏好失败：'+e.message)}
 }
 function resetTheme(){
@@ -246,7 +238,7 @@ function resetTheme(){
     document.getElementById('nameUser').value='';
     document.getElementById('nameAssistant').value='';
     document.getElementById('nameSystem').value='';
-    savePrefs(); render(); updatePanelSpacer();
+    savePrefs(); render(); updateLayoutHeights();
   }catch(e){showErr('恢复默认失败：'+e.message)}
 }
 document.getElementById('cUser').addEventListener('input',e=>{setCSS('--user',e.target.value);prefs.colors=prefs.colors||{};prefs.colors.user=e.target.value;savePrefs();});
@@ -279,25 +271,23 @@ function setPanelOpen(open){
   panelEl.classList.toggle('open', open);
   toggleBtn.textContent = open ? '收起' : '展开';
   prefs.panelOpen = open; savePrefs();
-  updatePanelSpacer();
-  setSidebarTop();
+  updateLayoutHeights();
 }
-function updatePanelSpacer(){
-  // 固定控制台高度：toggle 行 + （展开时的内容高度）
+
+/* 根据 header 实际高度，动态校正布局，避免遮挡 */
+function updateLayoutHeights(){
+  const headerH = siteHeader.offsetHeight || 56;
+  setCSS('--header-h', headerH + 'px');
+  // 计算面板占位高度
   const toggleH = document.querySelector('.panel-toggle').offsetHeight || 0;
   const content = panelEl.querySelector('.panel-content');
   const contentH = panelEl.classList.contains('open') ? (content.scrollHeight || content.offsetHeight || 0) : 0;
   panelSpacer.style.height = (toggleH + contentH) + 'px';
-}
-
-/* 侧边栏在固定控制台下的定位 */
-function setSidebarTop(){
-  const toggleH = document.querySelector('.panel-toggle').offsetHeight || 0;
-  const content = panelEl.querySelector('.panel-content');
-  const contentH = panelEl.classList.contains('open') ? (content.scrollHeight || content.offsetHeight || 0) : 0;
-  const top = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 56) + toggleH + contentH;
-  document.getElementById('sidebar').style.top = top + 'px';
-  document.getElementById('sidebar').style.height = `calc(100dvh - ${top}px)`;
+  // 侧边栏 top/height
+  const top = headerH + toggleH + contentH;
+  const sb = document.getElementById('sidebar');
+  sb.style.top = top + 'px';
+  sb.style.height = `calc(100dvh - ${top}px)`;
 }
 
 /* ==== 文件导入 ==== */
@@ -324,7 +314,7 @@ function openSidebar(show){
 }
 
 /* ==== 解析与状态 ==== */
-let conversations=[]; // {id,title,created,messages:[{role,content,model,ts,_nodeId,previous:[]}] , models:Set}
+let conversations=[]; // {id,title,created,messages:[{role,content,model,ts,_nodeId,previous:[]}], models:Set, totalChars:number}
 let currentConvIndex=0;
 
 function handleImportedJSON(data){
@@ -338,6 +328,11 @@ function handleImportedJSON(data){
     }
     if(!conversations.length){throw new Error('没解析到会话。请选择 conversations.json 或 conversations/*.json');}
 
+    // 计算每个会话的总字数（含主路径消息，不包含分支可按需改）
+    conversations.forEach(c=>{
+      c.totalChars = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
+    });
+
     buildTopSelect();
     buildSidebarList();
 
@@ -345,7 +340,8 @@ function handleImportedJSON(data){
     setTopSelect('0');
     updateConvMeta();
     render();
-    setPanelOpen(prefs.panelOpen ?? true); // 首次可自动展开
+    setPanelOpen(prefs.panelOpen ?? true);
+    updateLayoutHeights();
   }catch(e){ showErr('导入失败：'+(e.message||e)); }
 }
 
@@ -353,7 +349,9 @@ function buildTopSelect(){
   const sel=document.getElementById('convListTop'); sel.innerHTML='';
   conversations.forEach((c,idx)=>{
     const opt=document.createElement('option');
-    opt.value=String(idx); opt.textContent=c.title||`(无标题) ${idx+1}`; sel.appendChild(opt);
+    opt.value=String(idx);
+    opt.textContent=c.title||`(无标题) ${idx+1}`;
+    sel.appendChild(opt);
   });
 }
 function setTopSelect(val){document.getElementById('convListTop').value=val;}
@@ -363,8 +361,9 @@ function buildSidebarList(){
   conversations.forEach((c,idx)=>{
     const item=document.createElement('div');
     item.className='conv-item'+(idx===currentConvIndex?' active':'');
+    const dateStr = c.created?new Date(c.created*1000).toLocaleDateString():'';
     item.innerHTML=`<div>${escapeHTML(c.title||`(无标题) ${idx+1}`)}</div>
-      <div class="meta-mini">消息 ${c.messages.length}${c.created?` · ${new Date(c.created*1000).toLocaleDateString()}`:''}</div>`;
+      <div class="meta-mini">消息 ${c.messages.length}${dateStr?` · ${dateStr}`:''} · 字数 ${c.totalChars||0}</div>`;
     item.onclick=()=>{
       currentConvIndex=idx;
       setTopSelect(String(idx));
@@ -372,6 +371,7 @@ function buildSidebarList(){
       activateSidebarItem(idx);
       openSidebar(false);
       render();
+      updateLayoutHeights();
     };
     list.appendChild(item);
   });
@@ -386,6 +386,7 @@ function selectConversation(idxStr){
   updateConvMeta();
   activateSidebarItem(currentConvIndex);
   render();
+  updateLayoutHeights();
 }
 
 /* 解析 mapping 树 */
@@ -454,15 +455,24 @@ function collectBranchObjects(mapping,startId,out){
   }
 }
 
-/* 元信息 / 字数统计 */
+/* 元信息 / 字数统计（当前会话） */
 function updateConvMeta(){
   const c=conversations[currentConvIndex];
   const meta=document.getElementById('convMeta');
   const created=c.created?new Date(c.created*1000).toLocaleString():'—';
-  meta.textContent=`创建：${created}｜消息数：${c.messages.length}`;
-  // 总字数
   const total = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
+  c.totalChars = total; // 同步
+  meta.textContent=`创建：${created}｜消息数：${c.messages.length}｜字数：${total}`;
   document.getElementById('totalChars').textContent = total;
+  // 同步侧边栏该项的字数显示
+  const list=document.getElementById('convListSide');
+  if(list.children[currentConvIndex]){
+    const metaMini=list.children[currentConvIndex].querySelector('.meta-mini');
+    if(metaMini){
+      const dateStr=c.created?new Date(c.created*1000).toLocaleDateString():'';
+      metaMini.textContent = `消息 ${c.messages.length}${dateStr?` · ${dateStr}`:''} · 字数 ${total}`;
+    }
+  }
 }
 
 /* 渲染 */
@@ -484,7 +494,6 @@ function render(){
         nm.textContent=name; chat.appendChild(nm);
       }
 
-      // 顶部小行（时间/模型/字数）
       const metaTop=document.createElement('div'); metaTop.className='meta-top';
       const ts=m.ts?new Date(m.ts*1000).toLocaleString():'';
       const model=m.model||'';
@@ -495,7 +504,6 @@ function render(){
 
       const div=document.createElement('div'); div.className=`msg ${clsByRole(m.role)}`; div.innerText=m.content||''; chat.appendChild(div);
 
-      // 分支子线程
       if(Array.isArray(m.previous) && m.previous.length){
         const details=document.createElement('details'); details.className='branch';
         const summary=document.createElement('summary'); summary.textContent=`回溯/分支（${m.previous.length} 条）`;
@@ -523,32 +531,25 @@ function render(){
       }
     });
 
-    // 面板与侧栏位置刷新
-    updatePanelSpacer();
-    setSidebarTop();
-    // 更新总字数（如果内容有变）
     updateConvMeta();
+    updateLayoutHeights();
   }catch(e){showErr('渲染失败：'+e.message)}
 }
 function clsByRole(role){if(role==='user')return 'user';if(role==='system')return 'system';return 'assistant';}
 
-/* 导出：仅当前会话（所见样式） */
+/* 导出：仅当前会话 */
 function exportCurrentConversation(){
   try{
     const c=conversations[currentConvIndex]; if(!c) { showErr('没有可导出的会话'); return; }
-    // 读当前主题变量
     const rootStyle = getComputedStyle(document.documentElement);
     const vars = ['--user','--assistant','--sys','--bubble-max','--bg-light','--bg-dark','--text-light','--text-dark','--chip','--border','--border-dark'];
     const cssVars = vars.map(v=>`${v}:${rootStyle.getPropertyValue(v).trim()}`).join(';');
-
-    // 生成纯净 HTML，仅包含当前会话消息（含分支）
     const esc = s => (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
     const bubble = (role, ts, model, text) => {
       const align = role==='user'?'flex-end':(role==='assistant'?'flex-start':'center');
       const meta = `<div class="meta-top" style="align-self:${align}"><span>${ts||''}</span>${model?`<span class="model-chip">${esc(model)}</span>`:''}<span>字数：${(text||'').length}</span></div>`;
       return `${meta}<div class="msg ${role}">${esc(text||'')}</div>`;
     };
-
     let body = '';
     c.messages.forEach(m=>{
       const ts = m.ts?new Date(m.ts*1000).toLocaleString():'';
@@ -570,7 +571,6 @@ function exportCurrentConversation(){
         body += `</div></details>`;
       }
     });
-
     const html = `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(c.title||'导出')}</title>
 <style>
@@ -591,9 +591,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Aria
 <div class="container">
   <h2 style="margin:.2rem 0 1rem 0">${esc(c.title||'(无标题)')}</h2>
   <div class="chat">${body}</div>
-</div>
-</body></html>`;
-
+</div></body></html>`;
     const blob=new Blob([html],{type:'text/html'});
     const url=URL.createObjectURL(blob); const a=document.createElement('a');
     a.href=url; a.download=`${(c.title||'chat_export').replace(/[\\/:*?"<>|]/g,'_')}.html`; a.click(); URL.revokeObjectURL(url);
@@ -603,9 +601,9 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Aria
 /* 工具 */
 function escapeHTML(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
-/* 页面尺寸变化时，更新占位与侧栏定位 */
-window.addEventListener('resize', ()=>{updatePanelSpacer(); setSidebarTop();});
-window.addEventListener('orientationchange', ()=>{setTimeout(()=>{updatePanelSpacer(); setSidebarTop();}, 300);});
+/* 尺寸变化时，更新布局 */
+window.addEventListener('resize', updateLayoutHeights);
+window.addEventListener('orientationchange', ()=>{setTimeout(updateLayoutHeights, 300);});
 </script>
 </body>
 </html>
