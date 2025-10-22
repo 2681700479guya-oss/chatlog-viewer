@@ -1,684 +1,162 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>ChatGPT聊天记录查看器</title>
-    <style>
-        :root {
-            /* 明亮模式 */
-            --bg-color: #ffffff;
-            --sidebar-bg: #f7f7f8;
-            --message-user-bg: #f0f7ff;
-            --message-assistant-bg: #f8f9fa;
-            --text-color: #1a1a1a;
-            --text-muted: #6e6e80;
-            --border-color: #e5e5e7;
-            --accent-color: #10a37f;
-            --hover-color: #f0f0f0;
-            --shadow: 0 2px 10px rgba(0,0,0,0.1);
-            
-            /* 侧边栏宽度 */
-            --sidebar-width: 280px;
-            --sidebar-collapsed: 60px;
-        }
-
-        /* 深色模式 */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #343541;
-                --sidebar-bg: #202123;
-                --message-user-bg: #2a2b32;
-                --message-assistant-bg: #444654;
-                --text-color: #ececf1;
-                --text-muted: #8e8ea0;
-                --border-color: #4a4b57;
-                --accent-color: #10a37f;
-                --hover-color: #2a2b32;
-                --shadow: 0 2px 10px rgba(0,0,0,0.3);
-            }
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.5;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .app {
-            display: flex;
-            height: 100vh;
-        }
-
-        /* 侧边栏 */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease;
-            position: relative;
-            z-index: 10;
-        }
-
-        .sidebar-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .new-chat-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .conversations-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .conversation-item {
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .conversation-item:hover {
-            background-color: var(--hover-color);
-        }
-
-        .conversation-item.active {
-            background-color: var(--accent-color);
-            color: white;
-        }
-
-        /* 主聊天区域 */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .chat-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .toggle-sidebar {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            font-size: 18px;
-            cursor: pointer;
-            padding: 8px;
-        }
-
-        .chat-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .message {
-            display: flex;
-            gap: 16px;
-            max-width: 100%;
-        }
-
-        .message.user {
-            justify-content: flex-end;
-        }
-
-        .message-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-
-        .user .message-avatar {
-            background-color: #10a37f;
-            color: white;
-        }
-
-        .assistant .message-avatar {
-            background-color: #8e8ea0;
-            color: white;
-        }
-
-        .message-content {
-            max-width: 85%;
-            padding: 16px;
-            border-radius: 8px;
-            font-size: 16px;
-            line-height: 1.6;
-        }
-
-        .user .message-content {
-            background-color: var(--message-user-bg);
-            border-bottom-right-radius: 2px;
-        }
-
-        .assistant .message-content {
-            background-color: var(--message-assistant-bg);
-            border-bottom-left-radius: 2px;
-        }
-
-        .message-model {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 8px;
-            font-style: italic;
-        }
-
-        /* 控制面板 */
-        .controls {
-            padding: 16px;
-            border-top: 1px solid var(--border-color);
-            background-color: var(--bg-color);
-        }
-
-        .control-group {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
-
-        .control-item {
-            flex: 1;
-            min-width: 120px;
-        }
-
-        select, button {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-size: 14px;
-        }
-
-        button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        /* 导入面板 */
-        .import-panel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            padding: 20px;
-        }
-
-        .import-modal {
-            background-color: var(--bg-color);
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 500px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .drop-zone {
-            border: 2px dashed var(--border-color);
-            border-radius: 8px;
-            padding: 40px 20px;
-            text-align: center;
-            margin-bottom: 16px;
-            cursor: pointer;
-        }
-
-        .drop-zone.active {
-            border-color: var(--accent-color);
-            background-color: var(--message-user-bg);
-        }
-
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                transform: translateX(-100%);
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .message-content {
-                max-width: 90%;
-            }
-        }
-
-        /* 滚动条样式 */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 3px;
-        }
-    /* 🔧 修复移动端侧边栏与主内容显示问题 */
-@media (max-width: 768px) {
-  .app {
-    flex-direction: column;
-  }
-  .sidebar {
-    width: 100%;
-    position: relative;
-    transform: none !important;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-  }
-  .main-content {
-    width: 100%;
-  }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChatGPT 聊天记录查看器</title>
+<style>
+:root {
+  --bg-light: #f5f5f5;
+  --bg-dark: #1e1e1e;
+  --user-color: #0078ff;
+  --assistant-color: #666;
+  --text-light: #111;
+  --text-dark: #ddd;
 }
-
-/* 🔧 让消息内容在小屏幕上自动换行，不溢出 */
-.message-content {
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-}/* 🔧 修复导入后聊天内容显示不出的问题 */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-light);
+  color: var(--text-light);
+  transition: all .3s;
+}
+body.dark {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+header {
+  position: sticky;
+  top: 0;
+  background: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .5em 1em;
+  border-bottom: 1px solid #ccc;
+}
+button {
+  padding: .4em .8em;
+  margin-left: .4em;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
 .chat-container {
+  padding: 1em;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  height: calc(100vh - 120px);
-  padding-bottom: 20px;
+  gap: .8em;
 }
-
-/* 🔧 防止聊天内容和背景色混在一起 */
-.message.assistant, .message.user {
-  background: rgba(255, 255, 255, 0.05);
+.message {
+  max-width: 85%;
+  padding: .6em .9em;
+  border-radius: 10px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+.user {
+  align-self: flex-end;
+  background: var(--user-color);
+  color: white;
+}
+.assistant {
+  align-self: flex-start;
+  background: var(--assistant-color);
+  color: white;
+}
+.model-tag {
+  font-size: 0.8em;
+  opacity: 0.8;
+  display: block;
+  text-align: right;
+  margin-top: .3em;
+}
+.collapsible {
+  border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 8px 10px;
-  margin: 6px 0;
-}</style>
+  padding: .5em;
+  background: rgba(0,0,0,0.05);
+}
+.hidden { display: none; }
+</style>
 </head>
 <body>
-    <div class="app">
-        <!-- 侧边栏 -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <button class="new-chat-btn" id="importBtn">
-                    📁 导入聊天记录
-                </button>
-            </div>
-            <div class="conversations-list" id="conversationsList">
-                <!-- 会话列表会在这里动态生成 -->
-            </div>
-        </div>
+<header>
+  <div>📄 ChatGPT 聊天记录查看器</div>
+  <div>
+    <input type="file" id="fileInput" accept=".json,.txt" style="display:none">
+    <button onclick="document.getElementById('fileInput').click()">导入</button>
+    <button onclick="exportChat()">导出</button>
+    <button onclick="toggleTheme()">夜间/日间</button>
+  </div>
+</header>
 
-        <!-- 主内容区域 -->
-        <div class="main-content">
-            <div class="chat-header">
-                <button class="toggle-sidebar" id="toggleSidebar">☰</button>
-                <div class="chat-title" id="chatTitle">选择聊天记录开始查看</div>
-                <div></div> <!-- 占位 -->
-            </div>
+<div class="chat-container" id="chatContainer">
+  <p style="opacity:.6;text-align:center;">请选择聊天记录文件导入</p>
+</div>
 
-            <div class="chat-messages" id="chatMessages">
-                <div class="message assistant">
-                    <div class="message-avatar">AI</div>
-                    <div class="message-content">
-                        欢迎使用ChatGPT聊天记录查看器！请点击左侧的"导入聊天记录"按钮开始使用。
-                        <div class="message-model">GPT-4</div>
-                    </div>
-                </div>
-            </div>
+<script>
+let darkMode = false;
+function toggleTheme(){
+  darkMode = !darkMode;
+  document.body.classList.toggle("dark", darkMode);
+}
 
-            <div class="controls">
-                <div class="control-group">
-                    <div class="control-item">
-                        <select id="contextRange">
-                            <option value="0">不显示上下文</option>
-                            <option value="2">显示2条上下文</option>
-                            <option value="4" selected>显示4条上下文</option>
-                            <option value="8">显示8条上下文</option>
-                            <option value="all">显示所有上下文</option>
-                        </select>
-                    </div>
-                    <div class="control-item">
-                        <select id="sameConversation">
-                            <option value="true" selected>仅显示同会话</option>
-                            <option value="false">显示所有会话</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <button id="exportBtn" disabled>📥 导出当前对话</button>
-                </div>
-            </div>
-        </div>
-    </div>
+document.getElementById('fileInput').addEventListener('change', async function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const text = await file.text();
+  try{
+    const data = JSON.parse(text);
+    renderChat(data);
+  }catch{
+    alert("文件格式错误，请导入 JSON 格式的聊天记录。");
+  }
+});
 
-    <!-- 导入面板 -->
-    <div class="import-panel" id="importPanel" style="display: none;">
-        <div class="import-modal">
-            <h3 style="margin-bottom: 16px;">导入聊天记录</h3>
-            <div class="drop-zone" id="dropZone">
-                <p>📁 拖放JSON文件到这里</p>
-                <p style="font-size: 14px; color: var(--text-muted); margin-top: 8px;">
-                    或点击选择文件
-                </p>
-            </div>
-            <input type="file" id="fileInput" accept=".json" style="display: none;">
-            <div style="display: flex; gap: 8px; margin-top: 16px;">
-                <button onclick="document.getElementById('importPanel').style.display = 'none'" style="background: var(--text-muted);">
-                    取消
-                </button>
-                <button onclick="processImport()" style="flex: 1;">
-                    导入
-                </button>
-            </div>
-        </div>
-    </div>
+function renderChat(data){
+  const container = document.getElementById('chatContainer');
+  container.innerHTML = '';
+  data.forEach((msg, i)=>{
+    const div = document.createElement('div');
+    div.classList.add('message', msg.role);
+    let content = msg.content || "";
+    const model = msg.model ? `<span class='model-tag'>${msg.model}</span>` : "";
+    // 如果有回溯消息，可折叠
+    if (msg.previous && msg.previous.length > 0){
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('collapsible');
+      const toggleBtn = document.createElement('button');
+      toggleBtn.textContent = `展开/收起回溯 (${msg.previous.length})`;
+      const hiddenDiv = document.createElement('div');
+      hiddenDiv.classList.add('hidden');
+      msg.previous.forEach(p=>{
+        const pDiv = document.createElement('div');
+        pDiv.textContent = p;
+        pDiv.style.margin=".3em 0";
+        hiddenDiv.appendChild(pDiv);
+      });
+      toggleBtn.onclick = ()=>hiddenDiv.classList.toggle('hidden');
+      wrapper.appendChild(toggleBtn);
+      wrapper.appendChild(hiddenDiv);
+      div.appendChild(wrapper);
+    }
+    div.insertAdjacentHTML('beforeend', content + model);
+    container.appendChild(div);
+  });
+}
 
-    <script>
-        // 状态管理
-        let conversations = [];
-        let currentConversation = null;
-        let currentMessageIndex = -1;
-
-        // DOM元素
-        const sidebar = document.getElementById('sidebar');
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const importBtn = document.getElementById('importBtn');
-        const importPanel = document.getElementById('importPanel');
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const conversationsList = document.getElementById('conversationsList');
-        const chatMessages = document.getElementById('chatMessages');
-        const chatTitle = document.getElementById('chatTitle');
-        const exportBtn = document.getElementById('exportBtn');
-        const contextRange = document.getElementById('contextRange');
-        const sameConversation = document.getElementById('sameConversation');
-
-        // 事件监听
-        toggleSidebar.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-        });
-
-        importBtn.addEventListener('click', () => {
-            importPanel.style.display = 'flex';
-        });
-
-        dropZone.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('active');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('active');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('active');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-            }
-        });
-
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files.length > 0) {
-                processImport();
-            }
-        });
-
-        contextRange.addEventListener('change', renderMessages);
-        sameConversation.addEventListener('change', renderMessages);
-
-        exportBtn.addEventListener('click', exportConversation);
-
-        // 导入处理函数
-        function processImport() {
-            const file = fileInput.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    parseConversations(data);
-                    importPanel.style.display = 'none';
-                    fileInput.value = '';
-                } catch (error) {
-                    alert('文件解析失败，请确保是有效的JSON文件');
-                    console.error('解析错误:', error);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // 解析对话数据
-        function parseConversations(data) {
-            conversations = [];
-            
-            // 处理不同的数据格式
-            if (Array.isArray(data)) {
-                // 如果是消息数组
-                const conversation = {
-                    id: 'conversation_' + Date.now(),
-                    title: '导入的对话',
-                    messages: data.map(msg => ({
-                        id: msg.id || generateId(),
-                        role: msg.role || 'user',
-                        content: msg.content || '',
-                        model: msg.model || 'GPT-3.5',
-                        timestamp: msg.timestamp || Date.now()
-                    }))
-                };
-                conversations.push(conversation);
-            } else if (data.conversations && Array.isArray(data.conversations)) {
-                // OpenAI导出格式
-                data.conversations.forEach(conv => {
-                    const conversation = {
-                        id: conv.id || conv.conversation_id || generateId(),
-                        title: conv.title || '未命名对话',
-                        messages: (conv.mapping ? Object.values(conv.mapping) : []).filter(msg => msg.message).map(msg => ({
-                            id: msg.id || generateId(),
-                            role: msg.message.author.role,
-                            content: msg.message.content.parts ? msg.message.content.parts.join('') : msg.message.content,
-                            model: msg.message.metadata?.model_slug || 'GPT-3.5',
-                            timestamp: msg.message.create_time * 1000
-                        }))
-                    };
-                    conversations.push(conversation);
-                });
-            }
-
-            updateConversationsList();
-            if (conversations.length > 0) {
-                selectConversation(conversations[0].id);
-            }
-        }
-
-        // 更新会话列表
-        function updateConversationsList() {
-            conversationsList.innerHTML = '';
-            conversations.forEach(conv => {
-                const item = document.createElement('div');
-                item.className = 'conversation-item';
-                item.textContent = conv.title;
-                item.addEventListener('click', () => selectConversation(conv.id));
-                conversationsList.appendChild(item);
-            });
-        }
-
-        // 选择会话
-        function selectConversation(conversationId) {
-            currentConversation = conversations.find(c => c.id === conversationId);
-            if (!currentConversation) return;
-
-            // 更新UI
-            document.querySelectorAll('.conversation-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.querySelector(`.conversation-item:nth-child(${conversations.findIndex(c => c.id === conversationId) + 1})`).classList.add('active');
-            
-            chatTitle.textContent = currentConversation.title;
-            exportBtn.disabled = false;
-            
-            renderMessages();
-        }
-
-        // 渲染消息
-        function renderMessages() {
-            if (!currentConversation) return;
-
-            chatMessages.innerHTML = '';
-            const contextCount = parseInt(contextRange.value);
-            const onlySameConv = sameConversation.value === 'true';
-
-            currentConversation.messages.forEach((message, index) => {
-                const messageElement = createMessageElement(message, index);
-                chatMessages.appendChild(messageElement);
-            });
-
-            // 滚动到底部
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // 创建消息元素
-        function createMessageElement(message, index) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${message.role}`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            avatar.textContent = message.role === 'user' ? '你' : 'AI';
-            
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            content.innerHTML = formatMessageContent(message.content);
-            
-            const model = document.createElement('div');
-            model.className = 'message-model';
-            model.textContent = message.model;
-            
-            content.appendChild(model);
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(content);
-            
-            return messageDiv;
-        }
-
-        // 格式化消息内容
-        function formatMessageContent(content) {
-            // 保留原始格式，只做基本的换行处理
-            return content.replace(/\n/g, '<br>');
-        }
-
-        // 导出对话
-        function exportConversation() {
-            if (!currentConversation) return;
-
-            const content = currentConversation.messages.map(msg => {
-                return `${msg.role === 'user' ? '你' : 'AI'} (${msg.model}):\n${msg.content}\n\n`;
-            }).join('---\n\n');
-
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${currentConversation.title}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // 工具函数
-        function generateId() {
-            return 'msg_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        // 初始化
-        function init() {
-            // 检查是否支持本地存储
-            try {
-                const saved = localStorage.getItem('chatgpt_conversations');
-                if (saved) {
-                    conversations = JSON.parse(saved);
-                    updateConversationsList();
-                }
-            } catch (e) {
-                console.log('本地存储不可用');
-            }
-        }
-
-        // 启动应用
-        init();
-    </script>
+function exportChat(){
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], {type:"text/html"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'chat_export.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
 </body>
 </html>
