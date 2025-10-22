@@ -344,6 +344,21 @@
 .message-content {
   word-wrap: break-word;
   overflow-wrap: anywhere;
+}/* 🔧 修复导入后聊天内容显示不出的问题 */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: calc(100vh - 120px);
+  padding-bottom: 20px;
+}
+
+/* 🔧 防止聊天内容和背景色混在一起 */
+.message.assistant, .message.user {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 6px 0;
 }</style>
 </head>
 <body>
