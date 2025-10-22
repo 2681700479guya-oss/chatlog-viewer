@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>聊天记录 查看／导出</title>
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --panel: #11151d;
+      --text: #e8edf6;
+      --muted: #93a0b8;
+      --accent: #6aa1ff;
+      --line: #202637;
+      --bubble-user: #0f1712;
+      --bubble-assistant: #0f1320;
+      --radius: 14px;
+      --gap: 10px;
+      --fs: 16px;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height:100%; margin:0; background:var(--bg); color:var(--text); font:var(--fs)/1.45 -apple-system, system-ui, "PingFang SC","Noto Sans SC",sans-serif; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .app { display: grid; grid-template-rows: auto 1fr auto; height:100%; }
+    header { display: flex; align-items: center; gap:12px; padding:12px; background: var(--panel); border-bottom:1px solid var(--line); }
+    header h1 { margin:0; font-size:18px; font-weight:600; }
+    header .spacer { flex:1; }
+    .btn { font-size:15px; padding:8px 12px; border-radius:10px; border:1px solid var(--line); background:#151b28; color:var(--text); cursor:pointer; }
+    .btn.primary { background: linear-gradient(180deg, #2a66ff, #1e4fe0); border:none; }
+    .btn.ghost { background: transparent; }
+    .btn:disabled { opacity:.55; cursor:not-allowed; }
+    .pill { font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); background:#0e1320; }
+
+    main { display: grid; grid-template-columns: 1fr; min-height:0; }
+    @media(min-width: 900px) { main { grid-template-columns: 300px 1fr; } }
+    aside { display:flex; flex-direction:column; border-bottom:1px solid var(--line); }
+    @media(min-width: 900px) { aside { border-right:1px solid var(--line); } }
+    .toolbar { padding:10px; display:grid; gap:8px; background:rgba(255,255,255,0.02); }
+    .toolbar input[type=search], .toolbar select, .toolbar input[type=text] {
+      width:100%; background:#0a0f1a; border:1px solid var(--line); color:var(--text); padding:12px; border-radius:12px; font-size:16px;
+    }
+    .toggles { display:flex; gap:8px; flex-wrap:wrap; }
+    .toggle { display:flex; align-items:center; gap:6px; padding:8px 10px; background:#0a1020; border:1px solid var(--line); border-radius:999px; color:var(--muted); cursor:pointer; }
+    .toggle input { accent-color: var(--accent); width:22px; height:22px; }
+
+    .list { overflow:auto; -webkit-overflow-scrolling:touch; min-height:0; }
+    .msg { display:flex; gap:10px; align-items:center; padding:12px; border-bottom:1px solid var(--line); cursor:pointer; }
+    .msg:hover { background:#0f1422; }
+    .msg input[type=checkbox] { width:22px; height:22px; }
+    .badge { font-size:12px; padding:4px 8px; border-radius:8px; border:1px solid var(--line); }
+    .badge.user { color:#9ae6b4; background:#0c1710; border-color:#243b2c; }
+    .badge.assistant { color:#b4c8ff; background:#0b1220; border-color:#243056; }
+    .badge.system { color:#eabfff; background:#160e20; border-color:#4a2e66; }
+    .badge.tool { color:#ffd39a; background:#1f140b; border-color:#5a3b17; }
+    .pv { color:#cfd5e6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ts { color:var(--muted); font-size:12px; min-width:80px; text-align:right; }
+
+    .countbar { padding:8px 12px; border-top:1px solid var(--line); display:flex; align-items:center; color:var(--muted); }
+    .countbar .right { margin-left:auto; display:flex; gap:8px; }
+
+    section.viewer { display:flex; flex-direction:column; min-height:0; }
+    .chatHead { display:flex; gap:8px; align-items:center; padding:12px; border-bottom:1px solid var(--line); background: rgba(255,255,255,0.02); }
+    .chatHead .meta { font-size:13px; color:var(--muted); display:flex; gap:10px; flex-wrap:wrap; }
+    .chat { flex:1; overflow:auto; -webkit-overflow-scrolling:touch; padding:12px; display:flex; flex-direction:column; gap:12px; }
+    .day { text-align:center; color:var(--muted); font-size:12px; margin:10px 0 4px; }
+    .bubble { max-width:100%; padding:12px; border:1px solid var(--line); border-radius:var(--radius); white-space:pre-wrap; word-break:break-word; }
+    .bubble.user { background: var(--bubble-user); align-self:flex-end; }
+    .bubble.assistant { background: var(--bubble-assistant); align-self:flex-start; }
+    .bubble.system { background:#160e20; align-self:flex-start; }
+    .bubble.tool { background:#1f140b; align-self:flex-start; }
+    .who { font-size:12px; color:var(--muted); margin:0 4px; }
+
+    .chatFoot { padding:10px; border-top:1px solid var(--line); display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:var(--panel); }
+    .chip { display:flex; align-items:center; gap:6px; padding:8px 12px; background:#0a0f1a; border:1px solid var(--line); border-radius:999px; color:var(--muted); }
+    .chip input[type=checkbox] { width:22px; height:22px; accent-color:var(--accent); }
+    .range { display:flex; align-items:center; gap:6px; color:var(--muted); }
+    input[type=range] { width:120px; }
+
+    .footer { padding:10px; display:flex; gap:8px; align-items:center; justify-content:flex-end; }
+    .kbd { font-family: ui-monospace, Menlo, Consolas; font-size:12px; padding:2px 6px; border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; background:#0b0f1a; color:#b9c5e0; }
+    .empty { opacity:.7; text-align:center; padding:48px 16px; color:var(--muted); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>聊天记录 查看／导出</h1>
+    <span class="pill" id="status">未加载</span>
+    <div class="spacer"></div>
+    <label class="btn ghost" for="fileInput">导入 Chats</label>
+    <input id="fileInput" type="file" accept=".json,.jsonl,.txt" hidden />
+    <button class="btn" id="pasteBtn">粘贴 JSON</button>
+    <button class="btn" id="clearBtn">清空</button>
+  </header>
+
+  <main>
+    <aside>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="搜索：内容／ID／会话ID" />
+        <div class="row">
+          <select id="roleFilter">
+            <option value="">角色：全部</option>
+            <option value="user">用户(user)</option>
+            <option value="assistant">助手(assistant)</option>
+            <option value="system">系统(system)</option>
+            <option value="tool">工具(tool)</option>
+          </select>
+          <select id="convFilter">
+            <option value="">会话：全部</option>
+          </select>
+        </div>
+        <div class="row">
+          <input id="dateFrom" type="text" placeholder="起始日期 YYYY-MM-DD" />
+          <input id="dateTo"   type="text" placeholder="结束日期 YYYY-MM-DD" />
+        </div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="hideSystem" checked /> 隐藏 system</label>
+          <label class="toggle"><input type="checkbox" id="hideTool"   checked /> 隐藏 tool</label>
+          <label class="toggle"><input type="checkbox" id="exactSearch" /> 精确匹配</label>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+      <div class="countbar">
+        <div id="countText">0 条</div>
+        <div class="right">
+          <button class="btn" id="selectAllBtn">全选</button>
+          <button class="btn" id="clearSelBtn">清除勾选</button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="viewer">
+      <div class="chatHead">
+        <span class="badge" id="viewRole">—</span>
+        <div class="meta">
+          <span id="viewId">ID: —</span>
+          <span id="viewConv">会话: —</span>
+          <span id="viewTs">时间: —</span>
+          <span id="viewModel">模型: —</span>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn" id="copyBtn" disabled>复制此条</button>
+        <button class="btn" id="exportOneBtn" disabled>导出此条</button>
+      </div>
+      <div class="chat" id="chat">
+        <div class="empty">左侧选择一条消息查看。<br>右侧保留对话格式，无乱变版式。</div>
+      </div>
+      <div class="chatFoot">
+        <label class="chip"><input type="checkbox" id="showContext" /> 显示回溯</label>
+        <div class="range">
+          回溯条数: <input id="ctxRange" type="range" min="1" max="50" step="1" value="8" />
+          <span id="ctxNum">8</span>
+        </div>
+        <label class="chip"><input type="checkbox" id="onlyThisConv" /> 只看此会话</label>
+        <div class="footer">
+          <button class="btn primary" id="exportJSONL" disabled>导出 JSONL</button>
+          <button class="btn" id="exportCSV"   disabled>CSV</button>
+          <button class="btn" id="exportMD"    disabled>MD</button>
+          <button class="btn" id="exportTXT"   disabled>TXT</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  // —— 状态 ——  
+  let all = [];           // 扁平消息数组  
+  let filtered = [];      // 筛选后的  
+  let selectedIds = new Set();
+  let currentIndex = -1;
+
+  const $ = id => document.getElementById(id);
+  const listEl = $('list');
+  const chatEl = $('chat');
+
+  // —— 工具函数 ——  
+  const parseDate = v => {
+    if (!v) return null;
+    if (typeof v === 'number') {
+      const ms = v < 2e10 ? v*1000 : v;
+      return new Date(ms);
+    }
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const fmtDate = d => d ? d.toISOString().replace('T',' ').slice(0,19) : '—';
+
+  const download = (filename, content, type='text/plain;charset=utf-8') => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+  };
+
+  const normalize = (r,i=0) => {
+    const id = r.id ?? r.message_id ?? (`msg_${i}`);
+    const role = (r.role ?? r.sender_role ?? r.author_role ?? '').toLowerCase();
+    const conv = r.conversation_id ?? r.thread_id ?? r.session_id ?? '';
+    const created = parseDate(r.created_at ?? r.create_time ?? r.timestamp ?? null);
+    let content = '';
+    if (typeof r.content === 'string') {
+      content = r.content;
+    } else if (r.content && typeof r.content === 'object') {
+      if (Array.isArray(r.content)) {
+        content = r.content.map(p => typeof p === 'string' ? p : (p.text?.value ?? p.text ?? JSON.stringify(p))).join('\n');
+      } else if (r.content.text?.value) {
+        content = r.content.text.value;
+      } else if (r.content.parts) {
+        content = r.content.parts.join('\n');
+      } else {
+        content = JSON.stringify(r.content);
+      }
+    } else if (r.text) {
+      content = r.text;
+    } else {
+      content = '';
+    }
+    const model = r.model ?? r.ai_model ?? r.assistant_model ?? '';
+    return { id: String(id), role, conversation_id: String(conv), created_at: created, content: String(content), model };
+  };
+
+  const fromJSON = obj => {
+    if (Array.isArray(obj)) return obj;
+    if (obj.messages && Array.isArray(obj.messages)) return obj.messages;
+    if (obj.data && Array.isArray(obj.data)) return obj.data;
+    if (obj.conversations && Array.isArray(obj.conversations)) {
+      return obj.conversations.flatMap(c => (c.messages || []).map(m => ({ ...m, conversation_id: c.id ?? c.conversation_id ?? '' })));
+    }
+    return [obj];
+  };
+
+  // —— 渲染列表 ——  
+  const renderList = () => {
+    listEl.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    filtered.forEach((m,i) => {
+      const row = document.createElement('div'); row.className = 'msg'; row.tabIndex = 0;
+      const ck = document.createElement('input'); ck.type='checkbox'; ck.checked = selectedIds.has(m.id);
+      ck.addEventListener('change', e => {
+        if (e.target.checked) selectedIds.add(m.id); else selectedIds.delete(m.id);
+        updateExportBtns();
+      });
+      const badge = document.createElement('span'); badge.className = `badge ${m.role}`; badge.textContent = m.role || '—';
+      const mid = document.createElement('div'); mid.className='pv'; mid.title = `ID:${m.id} 会话:${m.conversation_id}`;
+      mid.textContent = (m.content||'').replace(/\s+/g,' ').slice(0,120);
+      const ts = document.createElement('div'); ts.className='ts'; ts.textContent = fmtDate(m.created_at);
+      row.appendChild(ck); row.appendChild(badge); row.appendChild(mid); row.appendChild(ts);
+      row.addEventListener('click', ev => { if(ev.target.tagName.toLowerCase()==='input') return; viewAt(i); });
+      row.addEventListener('keydown', ev => { if(ev.key==='Enter') viewAt(i); });
+      frag.appendChild(row);
+    });
+    listEl.appendChild(frag);
+    $('countText').textContent = `${filtered.length} 条`;
+  };
+
+  // —— 渲染聊天视图 ——  
+  const viewAt = i => {
+    if(i<0 || i>=filtered.length) return;
+    currentIndex = i;
+    const m = filtered[i];
+    $('viewRole').textContent = m.role || '—';
+    $('viewId').textContent   = `ID: ${m.id}`;
+    $('viewConv').textContent = `会话: ${m.conversation_id || '—'}`;
+    $('viewTs').textContent   = `时间: ${fmtDate(m.created_at)}`;
+    $('viewModel').textContent= `模型: ${m.model || '—'}`;
+
+    $('copyBtn').disabled = false;
+    $('exportOneBtn').disabled = false;
+
+    // 判断是否只看此会话：
+    if($('onlyThisConv').checked && m.conversation_id) {
+      $('convFilter').value = m.conversation_id;
+      applyFilters(false);
+      const newIndex = filtered.findIndex(x=>x.id===m.id);
+      currentIndex = newIndex>=0?newIndex:0;
+    }
+
+    // 构造聊天内容
+    chatEl.innerHTML = '';
+    const showCtx = $('showContext').checked;
+    const win = parseInt($('ctxRange').value || '8',10);
+    let toShow = [m];
+    if(showCtx) {
+      const conv = m.conversation_id;
+      const convList = all.filter(x=>x.conversation_id===conv);
+      const idx = convList.findIndex(x=>x.id===m.id);
+      const start = Math.max(idx-win,0);
+      const end   = Math.min(idx+win+1,convList.length);
+      toShow = convList.slice(start,end);
+    }
+    let lastDay = '';
+    toShow.forEach(msg=>{
+      const day = msg.created_at ? msg.created_at.toISOString().slice(0,10) : '';
+      if(day && day!==lastDay){
+        const sep = document.createElement('div'); sep.className='day'; sep.textContent = day;
+        chatEl.appendChild(sep);
+        lastDay = day;
+      }
+      const row = document.createElement('div'); row.className = msg.role==='user'?'rowU':'rowA';
+      const bubble = document.createElement('div'); bubble.className = `bubble ${msg.role}`;
+      bubble.textContent = msg.content || '';
+      const who    = document.createElement('div'); who.className='who';
+      who.textContent = `[${msg.role}] ${fmtDate(msg.created_at)} ${msg.model?('('+msg.model+')') : ''}`;
+      if(msg.role==='user'){
+        row.appendChild(who); row.appendChild(bubble);
+      } else {
+        row.appendChild(bubble); row.appendChild(who);
+      }
+      chatEl.appendChild(row);
+    });
+    chatEl.scrollTop = chatEl.scrollHeight + 9999;
+  };
+
+  // —— 筛选 & 导入 ——  
+  const applyFilters = (reset=true) => {
+    const q = $('search').value.trim().toLowerCase();
+    const role = $('roleFilter').value;
+    const conv = $('convFilter').value;
+    const hideSys = $('hideSystem').checked;
+    const hideTool= $('hideTool').checked;
+    const exact  = $('exactSearch').checked;
+    const from   = $('dateFrom').value ? new Date($('dateFrom').value+'T00:00:00') : null;
+    const to     = $('dateTo').value   ? new Date($('dateTo').value+'T23:59:59')   : null;
+
+    filtered = all.filter(m=>{
+      if(hideSys  && m.role==='system') return false;
+      if(hideTool && m.role==='tool')   return false;
+      if(role && m.role!==role)         return false;
+      if(conv && m.conversation_id!==conv) return false;
+      if(from && (!m.created_at || m.created_at<from)) return false;
+      if(to   && (!m.created_at || m.created_at>to))   return false;
+      if(q){
+        const hay = (m.content+' '+m.id+' '+m.conversation_id).toLowerCase();
+        if(exact){
+          if(!hay.includes(q)) return false;
+        } else {
+          const parts = q.split(/\s+/).filter(Boolean);
+          for(const p of parts) if(!hay.includes(p)) return false;
+        }
+      }
+      return true;
+    });
+    renderList();
+    updateExportBtns();
+    if(reset) { currentIndex=-1; chatEl.innerHTML = '<div class="empty">筛选后，左侧选择一条查看。</div>'; }
+  };
+
+  const populateConv = () => {
+    const sel = $('convFilter');
+    const keep = sel.value;
+    const set = new Set(all.map(m=>m.conversation_id).filter(Boolean));
+    sel.innerHTML = '<option value="">会话：全部</option>';
+    Array.from(set).sort().forEach(id=>{
+      const o = document.createElement('option'); o.value=id; o.textContent=id;
+      sel.appendChild(o);
+    });
+    if(set.has(keep)) sel.value=keep;
+  };
+
+  const updateExportBtns = () => {
+    const any = selectedIds.size>0;
+    $('exportJSONL').disabled = !any;
+    $('exportCSV').disabled   = !any;
+    $('exportMD').disabled    = !any;
+    $('exportTXT').disabled   = !any;
+  };
+
+  const importText = txt => {
+    try {
+      const isLines = txt.split('\n').filter(l=>l.trim()).length>1 && txt.trim()[0]!=='[';
+      if(isLines){
+        const arr = txt.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>JSON.parse(l));
+        all = arr.flatMap(o=>fromJSON(o)).map((r,i)=>normalize(r,i));
+      } else {
+        const obj = JSON.parse(txt);
+        all = fromJSON(obj).map((r,i)=>normalize(r,i));
+      }
+      selectedIds.clear();
+      currentIndex=-1;
+      populateConv();
+      applyFilters();
+      $('status').textContent = `已载入 ${all.length} 条`;
+    } catch(e){
+      alert('解析失败：请检查为 JSON 或 JSONL 格式。\n' + e.message);
+    }
+  };
+
+  // —— 导出 ——  
+  const getSelected = () => {
+    const map = new Map(all.map(x=>[x.id, x]));
+    return Array.from(selectedIds).map(id=>map.get(id)).filter(Boolean);
+  };
+  const toJSONL = rows => rows.map(r=>JSON.stringify({ id:r.id, role:r.role, conversation_id:r.conversation_id, created_at:r.created_at? r.created_at.toISOString() : '', model:r.model, content:r.content })).join('\n');
+  const toCSV   = rows => {
+    const esc = s => `"${String(s??'').replace(/"/g,'""').replace(/\r?\n/g,'\\n')}"`;
+    const h = ['id','role','conversation_id','created_at','model','content'];
+    const lines = [h.join(',')];
+    rows.forEach(r=>{
+      lines.push([esc(r.id),esc(r.role),esc(r.conversation_id),esc(r.created_at? r.created_at.toISOString():''),esc(r.model),esc(r.content)].join(','));
+    });
+    return lines.join('\n');
+  };
+  const toMD    = rows => rows.map(r=>{
+    const ts = r.created_at? r.created_at.toISOString() : '';
+    return `**${r.role}** _(模型:${r.model})_ · ${ts}\n> ${r.content.replace(/\n/g,'\n> ')}\n`;
+  }).join('\n---\n\n');
+  const toTXT   = rows => rows.map(r=>{
+    const ts = r.created_at? r.created_at.toISOString() : '';
+    return `[${r.role}] (模型:${r.model}) {id:${r.id}} {conv:${r.conversation_id}}\n${r.content}\n`;
+  }).join('\n------------------------------\n\n');
+
+  // —— 事件绑定 ——  
+  $('fileInput').addEventListener('change', async e=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    $('status').textContent = `读取 ${f.name}…`;
+    const txt = await f.text();
+    importText(txt);
+    e.target.value='';
+  });
+  $('pasteBtn').addEventListener('click', async ()=>{
+    try {
+      const t = await navigator.clipboard.readText();
+      if(!t) { alert('剪贴板为空'); return; }
+      importText(t);
+    } catch {
+      const t = prompt('粘贴 JSON/JSONL 文本：');
+      if(t) importText(t);
+    }
+  });
+  $('clearBtn').addEventListener('click', ()=>{
+    all=[]; filtered=[]; selectedIds.clear(); currentIndex=-1;
+    listEl.innerHTML=''; chatEl.innerHTML='<div class="empty">已清空</div>';
+    $('status').textContent='未加载'; $('countText').textContent='0 条';
+    updateExportBtns();
+  });
+
+  $('selectAllBtn').addEventListener('click', ()=>{
+    filtered.forEach(m=>selectedIds.add(m.id));
+    renderList(); updateExportBtns();
+  });
+  $('clearSelBtn').addEventListener('click', ()=>{
+    selectedIds.clear(); renderList(); updateExportBtns();
+  });
+
+  $('copyBtn').addEventListener('click', ()=>{
+    if(currentIndex<0) return;
+    const m = filtered[currentIndex];
+    const txt = `[${m.role}] (模型:${m.model}) ${fmtDate(m.created_at)}\n${m.content}`;
+    navigator.clipboard.writeText(txt);
+  });
+  $('exportOneBtn').addEventListener('click', ()=>{
+    if(currentIndex<0) return;
+    const rows = [filtered[currentIndex]];
+    download(`message_${rows[0].id}.jsonl`, toJSONL(rows));
+  });
+  $('exportJSONL').addEventListener('click', ()=>{
+    const rows = getSelected(); if(!rows.length) return;
+    download(`messages_${rows.length}.jsonl`, toJSONL(rows));
+  });
+  $('exportCSV').addEventListener('click', ()=>{
+    const rows = getSelected(); if(!rows.length) return;
+    download(`messages_${rows.length}.csv`, toCSV(rows),'text/csv;charset=utf-8');
+  });
+  $('exportMD').addEventListener('click', ()=>{
+    const rows = getSelected(); if(!rows.length) return;
+    download(`messages_${rows.length}.md`, toMD(rows),'text/markdown;charset=utf-8');
+  });
+  $('exportTXT').addEventListener('click', ()=>{
+    const rows = getSelected(); if(!rows.length) return;
+    download(`messages_${rows.length}.txt`, toTXT(rows));
+  });
+
+  $('search').addEventListener('input', ()=>applyFilters());
+  $('roleFilter').addEventListener('change', ()=>applyFilters());
+  $('convFilter').addEventListener('change', ()=>applyFilters());
+  $('dateFrom').addEventListener('input', ()=>applyFilters());
+  $('dateTo').addEventListener('input', ()=>applyFilters());
+  $('hideSystem').addEventListener('change', ()=>applyFilters());
+  $('hideTool').addEventListener('change', ()=>applyFilters());
+  $('exactSearch').addEventListener('change', ()=>applyFilters());
+  $('showContext').addEventListener('change', ()=>viewAt(currentIndex));
+  $('ctxRange').addEventListener('input', ()=>{ $('ctxNum').textContent = $('ctxRange').value; viewAt(currentIndex); });
+  $('onlyThisConv').addEventListener('change', ()=>viewAt(currentIndex));
+
+  // —— 键盘支持 ——  
+  document.addEventListener('keydown', e=>{
+    if(!filtered.length) return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); const nxt = Math.min(currentIndex+1, filtered.length-1); viewAt(nxt); }
+    if(e.key==='ArrowUp'){ e.preventDefault(); const prev = Math.max(currentIndex-1, 0); viewAt(prev); }
+  });
+
+})();
+</script>
+
+</body>
+</html>
