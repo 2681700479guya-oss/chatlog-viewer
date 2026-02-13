@@ -7,10 +7,10 @@
 
 <style>
 :root{
-  --vh: 1vh;                 /* JS fallback */
-  --header-h: 52px;          /* runtime */
-  --footer-h: 62px;          /* runtime */
-  --panel-h: 0px;            /* runtime */
+  --vh: 1vh;
+  --header-h: 52px;
+  --footer-h: 62px;
+  --panel-h: 0px;
 
   --bg-light:#f2f2f7;
   --bg-dark:#000000;
@@ -37,7 +37,6 @@
   --corner: 18px;
 }
 
-/* 基础 */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{
@@ -47,50 +46,45 @@ body{
   color:var(--text-light);
   overflow:hidden;
   overscroll-behavior:none;
-  /* 关键：优先用 100dvh 铺满；不支持时用 --vh fallback */
-  height: 100dvh;
-  height: calc(var(--vh, 1vh) * 100);
+  height:100dvh;
+  height:calc(var(--vh, 1vh) * 100);
 }
-body.dark{
-  background:var(--bg-dark);
-  color:var(--text-dark);
-}
+body.dark{background:var(--bg-dark);color:var(--text-dark)}
 
-a{color:inherit}
-
-/* 顶栏（吃安全区） */
+/* 顶栏 */
 header{
   position:fixed; left:0; right:0; top:0;
   z-index:80;
   backdrop-filter:saturate(180%) blur(12px);
   background:color-mix(in oklab, #fff 88%, transparent);
   border-bottom:1px solid var(--sep-light);
-
-  padding-top: calc(env(safe-area-inset-top) + .35rem);
-  padding-bottom:.35rem;
-  padding-left:.65rem;
-  padding-right:.65rem;
-
+  padding-top: calc(env(safe-area-inset-top) + .26rem);
+  padding-bottom:.26rem;
+  padding-left:.55rem;
+  padding-right:.55rem;
   display:flex; align-items:flex-end; justify-content:space-between;
-  gap:.6rem;
+  gap:.55rem;
 }
 body.dark header{
   background:color-mix(in oklab, #1c1c1e 88%, transparent);
   border-bottom-color:var(--sep-dark);
 }
-.h-left{display:flex; align-items:center; gap:.55rem; min-width:0}
+.h-left{display:flex; align-items:center; gap:.50rem; min-width:0}
 .h-title{
-  font-weight:650; font-size: .98rem;
+  font-weight:650; font-size:.96rem;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   transition:opacity .2s, transform .2s;
 }
+.h-right{display:flex; gap:.42rem; align-items:center; flex-wrap:nowrap}
+
+/* 按钮 */
 .btn{
   border:1px solid var(--sep-light);
   background:color-mix(in oklab, #fff 92%, transparent);
   color:inherit;
   border-radius:999px;
-  padding:.34rem .60rem;
-  font-size:.85rem;
+  padding:.30rem .56rem;
+  font-size:.84rem;
   cursor:pointer;
 }
 body.dark .btn{
@@ -102,16 +96,17 @@ body.dark .btn{
   border:none;
   background:transparent;
   color:inherit;
-  font-size:1rem;
-  padding:.15rem .25rem;
+  font-size:1.02rem;
+  padding:.12rem .22rem;
   border-radius:10px;
 }
 .btn-ghost:active{transform:scale(.98)}
-.h-right{display:flex; gap:.45rem; align-items:center; flex-wrap:nowrap}
+.btn.active{
+  background:color-mix(in oklab, var(--user) 14%, transparent);
+  border-color:color-mix(in oklab, var(--user) 30%, transparent);
+}
 
-input[type="file"]{display:none}
-
-/* 顶部面板（导出/设置） */
+/* 顶部面板 */
 #panel{
   position:fixed; left:0; right:0;
   top:var(--header-h);
@@ -123,16 +118,34 @@ input[type="file"]{display:none}
   border-bottom:1px solid var(--sep-light);
   background:color-mix(in oklab, #fff 92%, transparent);
   backdrop-filter:saturate(180%) blur(10px);
-  padding:.6rem .75rem;
+  padding:.56rem .70rem;
 }
 body.dark .panel-inner{
   border-bottom-color:var(--sep-dark);
   background:color-mix(in oklab, #1c1c1e 92%, transparent);
 }
-.row{display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.18rem 0}
+.tabs{display:flex; gap:.5rem; align-items:center; margin-bottom:.18rem}
+.pill{
+  padding:.22rem .66rem;
+  border-radius:999px;
+  border:1px solid var(--sep-light);
+  background:color-mix(in oklab, #fff 88%, transparent);
+  cursor:pointer;
+  font-weight:700;
+  font-size:.84rem;
+}
+body.dark .pill{
+  border-color:var(--sep-dark);
+  background:color-mix(in oklab, #2c2c2e 88%, transparent);
+}
+.pill.active{
+  border-color:color-mix(in oklab, var(--user) 40%, transparent);
+  background:color-mix(in oklab, var(--user) 14%, transparent);
+}
+.row{display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.16rem 0}
 .badge{
   font-size:.75rem; font-weight:650;
-  padding:.14rem .45rem; border-radius:999px;
+  padding:.12rem .42rem; border-radius:999px;
   border:1px solid var(--sep-light);
   background:color-mix(in oklab, #fff 88%, transparent);
 }
@@ -140,15 +153,16 @@ body.dark .badge{
   border-color:var(--sep-dark);
   background:color-mix(in oklab, #2c2c2e 88%, transparent);
 }
-input[type="text"], select, input[type="range"]{
+input[type="text"], select, textarea, input[type="range"]{
   font-size:.85rem;
-  padding:.34rem .55rem;
+  padding:.30rem .52rem;
   border-radius:999px;
   border:1px solid var(--sep-light);
   background:color-mix(in oklab, #fff 92%, transparent);
   color:inherit;
 }
-body.dark input[type="text"], body.dark select, body.dark input[type="range"]{
+textarea{border-radius:14px;width:100%;padding:.55rem .6rem;line-height:1.45}
+body.dark input[type="text"], body.dark select, body.dark textarea, body.dark input[type="range"]{
   border-color:var(--sep-dark);
   background:color-mix(in oklab, #2c2c2e 90%, transparent);
 }
@@ -156,7 +170,7 @@ body.dark input[type="text"], body.dark select, body.dark input[type="range"]{
 .colorbox label{font-size:.78rem; opacity:.85}
 .colorbox input[type="color"]{width:30px;height:26px;border:none;background:transparent}
 
-/* 抽屉与遮罩 */
+/* 抽屉 */
 #drawerBackdrop{
   position:fixed; inset:0;
   background:rgba(0,0,0,.25);
@@ -165,7 +179,6 @@ body.dark input[type="text"], body.dark select, body.dark input[type="range"]{
   z-index:60;
 }
 #drawerBackdrop.show{opacity:1; pointer-events:auto}
-
 #drawer{
   position:fixed;
   left:0;
@@ -187,7 +200,7 @@ body.dark #drawer{
 }
 #drawer.open{transform:translateX(0)}
 .drawer-head{
-  padding:.7rem .8rem;
+  padding:.66rem .75rem;
   border-bottom:1px solid var(--sep-light);
   display:flex; align-items:center; justify-content:space-between; gap:.6rem;
 }
@@ -200,10 +213,11 @@ body.dark .drawer-head{border-bottom-color:var(--sep-dark)}
   flex:1;
 }
 .item{
-  padding:.55rem .65rem;
+  padding:.52rem .62rem;
   border-radius:12px;
   border:1px solid transparent;
   cursor:pointer;
+  user-select:none;
 }
 .item:hover{background:color-mix(in oklab,currentColor 6%,transparent)}
 .item.active{
@@ -211,13 +225,13 @@ body.dark .drawer-head{border-bottom-color:var(--sep-dark)}
   border-color:color-mix(in oklab, var(--user) 30%, transparent);
 }
 .item .sub{
-  margin-top:.16rem;
+  margin-top:.14rem;
   font-size:.74rem;
   color:var(--muted-light);
 }
 body.dark .item .sub{color:var(--muted-dark)}
 
-/* 内容区：严格 top/bottom，不出现上下大白边；只滚动这里 */
+/* 内容区 */
 main{
   position:fixed;
   left:0; right:0;
@@ -226,7 +240,7 @@ main{
   overflow:auto;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
-  padding:.75rem .65rem 1rem .65rem;
+  padding:.70rem .62rem 1rem .62rem;
 }
 .container{
   max-width:980px;
@@ -239,14 +253,13 @@ main{
 
 .section-title{
   font-weight:850;
-  margin:.25rem 0 .4rem 0;
+  margin:.22rem 0 .35rem 0;
   font-size:1.02rem;
 }
-
 .muted{color:var(--muted-light); line-height:1.6}
 body.dark .muted{color:var(--muted-dark)}
 
-/* 气泡与信息 */
+/* 气泡与 meta */
 .meta, .name{
   font-size:.72rem;
   color:var(--muted-light);
@@ -270,6 +283,32 @@ body.dark .chip{
   border-color:var(--sep-dark);
 }
 
+.msg-wrap{
+  display:flex;
+  gap:.35rem;
+  align-items:flex-start;
+  max-width:100%;
+}
+.msg-tools{
+  display:none;
+  flex-direction:column;
+  gap:.25rem;
+  margin-top:.05rem;
+}
+.toolbtn{
+  border:1px solid var(--sep-light);
+  background:color-mix(in oklab, #fff 92%, transparent);
+  border-radius:999px;
+  padding:.16rem .52rem;
+  font-size:.78rem;
+  cursor:pointer;
+}
+body.dark .toolbtn{
+  border-color:var(--sep-dark);
+  background:color-mix(in oklab, #2c2c2e 92%, transparent);
+}
+.toolbtn:active{transform:scale(.98)}
+
 .msg{
   max-width:var(--bubble-max);
   border-radius:var(--corner);
@@ -277,6 +316,7 @@ body.dark .chip{
   line-height:1.55;
   white-space:pre-wrap;
   box-shadow:0 1px 0 rgba(0,0,0,.03);
+  user-select:text;
 }
 .msg.user{
   background:var(--user);
@@ -305,34 +345,31 @@ body.dark .msg.assistant{
 body.dark .msg.system{
   color:color-mix(in oklab, #fff 70%, var(--system) 30%);
 }
+.edit-mode .msg-tools{display:flex}
 
-/* 回溯分支：永远放在左侧（AI 那边） */
+/* 回溯分支（默认收起，放在 AI 气泡侧） */
 .branch-wrap{
   max-width:var(--bubble-max);
   margin:.15rem 0 .35rem 0;
-  margin-right:auto; /* 强制靠左 */
+  margin-right:auto;
 }
 .branch-bar{
   display:flex; align-items:center; justify-content:space-between;
   gap:.45rem;
-  padding:.35rem .5rem;
+  padding:.34rem .50rem;
   border-radius:14px;
   border:1px dashed color-mix(in oklab, var(--user) 42%, transparent);
   background:color-mix(in oklab, var(--user) 8%, transparent);
   user-select:none;
 }
-.branch-bar .mini{
-  font-size:.78rem; font-weight:750;
-}
-.branch-bar .hint{
-  font-size:.74rem; color:var(--muted-light);
-}
+.branch-bar .mini{font-size:.78rem; font-weight:750}
+.branch-bar .hint{font-size:.74rem; color:var(--muted-light)}
 body.dark .branch-bar .hint{color:var(--muted-dark)}
 .bbtn{
   border:1px solid var(--sep-light);
   background:color-mix(in oklab, #fff 92%, transparent);
   border-radius:999px;
-  padding:.18rem .55rem;
+  padding:.16rem .52rem;
   font-size:.85rem;
   cursor:pointer;
 }
@@ -351,16 +388,9 @@ body.dark .branch-view{
   background:color-mix(in oklab, #1c1c1e 78%, transparent);
   border-color:var(--sep-dark);
 }
-.branch-view .meta{margin:.08rem .08rem}
 .branch-view .msg{max-width:100%}
-.branch-view .msg.user{margin-left:auto}
-.branch-view .msg.assistant{margin-right:auto}
 
-/* 记忆 */
-.mem-search{
-  display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;
-  margin:.25rem 0 .35rem 0;
-}
+/* 记忆卡片 */
 .card{
   background:var(--card-light);
   border:1px solid var(--sep-light);
@@ -372,20 +402,20 @@ body.dark .card{
   border-color:var(--sep-dark);
 }
 .mem-line{white-space:pre-wrap; line-height:1.5}
+.mem-actions{display:flex; gap:.45rem; flex-wrap:wrap; margin-top:.45rem}
+.mem-actions .btn{padding:.20rem .56rem}
 
-/* 底部 Tab：纯文字，无表情；吃安全区 */
+/* 底部Tab（单行无重叠） */
 footer{
   position:fixed; left:0; right:0; bottom:0;
   z-index:85;
   backdrop-filter:saturate(180%) blur(12px);
   background:color-mix(in oklab, #fff 88%, transparent);
   border-top:1px solid var(--sep-light);
-
-  padding-bottom: calc(env(safe-area-inset-bottom) + .15rem);
-  padding-top: .25rem;
-  padding-left:.35rem;
-  padding-right:.35rem;
-
+  padding-bottom: calc(env(safe-area-inset-bottom) + .14rem);
+  padding-top: .22rem;
+  padding-left:.32rem;
+  padding-right:.32rem;
   display:flex;
   align-items:center;
   justify-content:space-around;
@@ -396,21 +426,16 @@ body.dark footer{
   border-top-color:var(--sep-dark);
 }
 .tab{
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:.12rem;
-  font-size:.72rem;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.78rem;
   color:var(--muted-light);
-  min-width:78px;
-  padding:.32rem .25rem;
+  min-width:74px;
+  padding:.46rem .25rem;
   border-radius:12px;
   cursor:pointer;
+  user-select:none;
 }
 body.dark .tab{color:var(--muted-dark)}
-.tab .ticon{
-  font-size:.92rem;
-  line-height:1;
-  opacity:.85;
-}
 .tab.active{
   color:color-mix(in oklab, var(--user) 65%, #111 35%);
   background:color-mix(in oklab, var(--user) 10%, transparent);
@@ -433,19 +458,84 @@ body.dark .tab.active{
   max-width:92vw;
   background:rgba(30,30,30,.92);
   color:#fff;
-  padding:.5rem .75rem;
+  padding:.48rem .72rem;
   border-radius:12px;
   font-size:.86rem;
-  pointer-events:none;
 }
 
-/* 桌面宽屏：抽屉常驻 */
+/* 选区浮层按钮（加入记忆） */
+#selFloat{
+  position:fixed;
+  z-index:110;
+  display:none;
+}
+#selFloat.show{display:block}
+.sel-btn{
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(30,30,30,.92);
+  color:#fff;
+  border-radius:999px;
+  padding:.32rem .68rem;
+  font-size:.85rem;
+  cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,.25);
+}
+
+/* 底部编辑 Sheet */
+#sheetBackdrop{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.25);
+  opacity:0; pointer-events:none;
+  transition:.2s;
+  z-index:120;
+}
+#sheetBackdrop.show{opacity:1; pointer-events:auto}
+#sheet{
+  position:fixed;
+  left:0; right:0;
+  bottom:0;
+  transform:translateY(100%);
+  transition:transform .25s ease;
+  z-index:130;
+  padding-bottom: calc(env(safe-area-inset-bottom) + .35rem);
+}
+#sheet.show{transform:translateY(0)}
+.sheet-inner{
+  margin:.5rem .5rem 0 .5rem;
+  background:var(--card-light);
+  border:1px solid var(--sep-light);
+  border-radius:16px;
+  overflow:hidden;
+}
+body.dark .sheet-inner{
+  background:var(--card-dark);
+  border-color:var(--sep-dark);
+}
+.sheet-head{
+  display:flex; justify-content:space-between; align-items:center;
+  gap:.5rem;
+  padding:.52rem .62rem;
+  border-bottom:1px solid var(--sep-light);
+}
+body.dark .sheet-head{border-bottom-color:var(--sep-dark)}
+.sheet-title{font-weight:800}
+.sheet-body{padding:.6rem .62rem}
+.sheet-body textarea{min-height:42vh}
+.sheet-foot{
+  display:flex; gap:.5rem; justify-content:flex-end;
+  padding:.52rem .62rem;
+  border-top:1px solid var(--sep-light);
+}
+body.dark .sheet-foot{border-top-color:var(--sep-dark)}
+
+/* 宽屏：抽屉常驻 */
 @media (min-width:1100px){
   #drawer{transform:translateX(0)}
   #drawerBackdrop{display:none}
   main{left:290px}
   header{left:290px}
   footer{left:290px}
+  #panel{left:290px}
 }
 </style>
 </head>
@@ -456,61 +546,81 @@ body.dark .tab.active{
     <button class="btn-ghost" id="btnDrawer" aria-label="菜单">≡</button>
     <div class="h-title" id="navTitle">聊天记录查看器</div>
   </div>
+
   <div class="h-right">
-    <input id="file" type="file" accept=".json" multiple />
+    <input id="file" type="file" accept=".json" multiple style="display:none" />
     <button class="btn" id="btnImport">导入</button>
-    <button class="btn" id="btnExportPanel">导出</button>
-    <button class="btn" id="btnPanel">设置</button>
+    <button class="btn" id="btnExport">导出</button>
+    <button class="btn" id="btnSettings">设置</button>
     <button class="btn" id="btnTheme">夜间</button>
   </div>
 </header>
 
-<!-- Panel: Settings + Export -->
 <div id="panel">
   <div class="panel-inner" id="panelInner">
-    <div class="row">
-      <span class="badge">会话</span>
-      <select id="selConv"></select>
-      <span class="badge" id="convMeta">未导入</span>
+    <div class="tabs">
+      <div class="pill" id="pillExport">导出</div>
+      <div class="pill" id="pillSettings">设置</div>
     </div>
 
-    <div class="row">
-      <span class="badge">导出当前</span>
-      <select id="expFmt">
-        <option value="txt">TXT（清晰排版）</option>
-        <option value="json">JSON（结构化）</option>
-        <option value="html">HTML（带气泡样式）</option>
-      </select>
-      <button class="btn" id="btnDoExport">执行导出</button>
-    </div>
-
-    <div class="row">
-      <span class="badge">气泡宽度</span>
-      <input type="range" id="rngBubble" min="60" max="100" value="86" />
-      <span class="badge" id="txtBubble">86%</span>
-    </div>
-
-    <div class="row">
-      <span class="badge">颜色</span>
-      <div class="colorbox">
-        <label>用户</label><input type="color" id="cUser" />
-        <label>系统</label><input type="color" id="cSys" />
+    <div id="panelExport">
+      <div class="row">
+        <span class="badge">导出格式</span>
+        <select id="expFmt">
+          <option value="txt">TXT（清晰排版）</option>
+          <option value="json">JSON（结构化）</option>
+          <option value="html">HTML（带气泡样式）</option>
+        </select>
+        <button class="btn" id="btnDoExport">导出当前页面</button>
       </div>
-      <button class="btn" id="btnReset">恢复默认</button>
+      <div class="row">
+        <span class="badge">规则</span>
+        <span class="muted" id="expHint">导出你当前正在看的页面内容（聊天/编辑/记忆）。</span>
+      </div>
     </div>
 
-    <div class="row">
-      <span class="badge">显示名</span>
-      <input type="text" id="nmUser" placeholder="用户显示名" style="width:8.5rem">
-      <input type="text" id="nmAsst" placeholder="助手显示名" style="width:8.5rem">
-      <input type="text" id="nmSys"  placeholder="系统显示名" style="width:8.5rem">
-      <button class="btn" id="btnSaveNames">保存</button>
-    </div>
+    <div id="panelSettings" style="display:none">
+      <div class="row">
+        <span class="badge">会话</span>
+        <select id="selConv"></select>
+        <span class="badge" id="convMeta">未导入</span>
+      </div>
 
-    <div class="row">
-      <span class="badge">记忆</span>
-      <button class="btn" id="btnRescanMem">从会话重新提取记忆</button>
-      <span class="badge" id="memMeta">0 条</span>
+      <div class="row">
+        <span class="badge">气泡宽度</span>
+        <input type="range" id="rngBubble" min="60" max="100" value="86" />
+        <span class="badge" id="txtBubble">86%</span>
+      </div>
+
+      <div class="row">
+        <span class="badge">颜色</span>
+        <div class="colorbox">
+          <label>用户</label><input type="color" id="cUser" />
+          <label>系统</label><input type="color" id="cSys" />
+        </div>
+        <button class="btn" id="btnReset">恢复默认</button>
+      </div>
+
+      <div class="row">
+        <span class="badge">显示名</span>
+        <input type="text" id="nmUser" placeholder="用户显示名" style="width:8.5rem">
+        <input type="text" id="nmAsst" placeholder="助手显示名" style="width:8.5rem">
+        <input type="text" id="nmSys"  placeholder="系统显示名" style="width:8.5rem">
+        <button class="btn" id="btnSaveNames">保存</button>
+      </div>
+
+      <div class="row">
+        <span class="badge">记忆</span>
+        <span class="badge" id="memMeta">0 条</span>
+        <button class="btn" id="btnNewMem">新建记忆</button>
+      </div>
+
+      <div class="row">
+        <span class="badge">说明</span>
+        <span class="muted">
+          记忆仅来自 memories.json 或 conversations.json 的明确结构字段（白名单）。不会从“已更新记忆”提示文本猜测。
+        </span>
+      </div>
     </div>
   </div>
 </div>
@@ -528,36 +638,66 @@ body.dark .tab.active{
   <div class="container" id="view">
     <div class="section-title">聊天</div>
     <div class="muted">
-      使用方法：点右上角“导入”，选择 ChatGPT 官方导出的 conversations.json（可多选）。
-      导入后自动生成会话列表，并尝试从会话内容中提取“记忆”。
+      用法：点右上“导入”，选择 conversations.json（可多选）。如果你的导出包里有 memories.json，也可以一起导入。<br>
+      导出：会导出你当前正在看的页面内容。
     </div>
   </div>
 </main>
 
 <footer>
-  <div class="tab active" id="tabChats">
-    <div class="ticon">聊天</div><div>聊天</div>
-  </div>
-  <div class="tab" id="tabMems">
-    <div class="ticon">记忆</div><div>记忆</div>
-  </div>
-  <div class="tab" id="tabSettings">
-    <div class="ticon">设置</div><div>设置</div>
-  </div>
+  <div class="tab active" id="tabChats">聊天</div>
+  <div class="tab" id="tabEdit">编辑</div>
+  <div class="tab" id="tabMems">记忆</div>
 </footer>
 
 <div id="toast"><div class="toast-inner" id="toastText"></div></div>
 
+<!-- 选区浮层按钮 -->
+<div id="selFloat"><button class="sel-btn" id="btnSelToMem">加入记忆</button></div>
+
+<!-- 编辑/记忆编辑 Sheet -->
+<div id="sheetBackdrop"></div>
+<div id="sheet">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <div class="sheet-title" id="sheetTitle">编辑</div>
+      <button class="btn" id="sheetClose">关闭</button>
+    </div>
+    <div class="sheet-body">
+      <textarea id="sheetText" placeholder="在此编辑内容…"></textarea>
+      <div class="muted" style="margin-top:.35rem" id="sheetMeta"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" id="sheetCancel">取消</button>
+      <button class="btn" id="sheetDone">完成</button>
+    </div>
+  </div>
+</div>
+
 <script>
-/* Toast */
+/* ===== 基础工具 ===== */
 function toast(msg){
   const t=document.getElementById('toast');
   document.getElementById('toastText').textContent=msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 4500);
+  setTimeout(()=>t.classList.remove('show'), 3200);
 }
-
-/* Stable VH + bar heights */
+function escapeHTML(s){
+  return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function safeName(name){
+  return (name||'export').replace(/[\\/:*?"<>|]/g,'_').trim() || 'export';
+}
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  setTimeout(()=>{
+    a.click();
+    URL.revokeObjectURL(url);
+  },0);
+}
 function setStableVH(){
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -573,117 +713,72 @@ function measureBars(){
   const ph = panel.classList.contains('open') ? (panel.offsetHeight || 0) : 0;
   document.documentElement.style.setProperty('--panel-h', ph+'px');
 }
-function layoutTick(){
-  setStableVH();
-  measureBars();
-}
+function layoutTick(){ setStableVH(); measureBars(); }
 window.addEventListener('resize', layoutTick);
 window.addEventListener('orientationchange', ()=>setTimeout(layoutTick, 250));
 
-/* Preferences */
-const PREF_KEY = 'chatviewer_full_v2';
+/* ===== 偏好 ===== */
+const PREF_KEY = 'chatviewer_full_v4';
 const prefs = (()=>{ try{return JSON.parse(localStorage.getItem(PREF_KEY))||{};}catch{return{};} })();
 function savePrefs(){ try{localStorage.setItem(PREF_KEY, JSON.stringify(prefs));}catch{} }
 function setCSS(k,v){document.documentElement.style.setProperty(k,v);}
 
-/* State */
-let conversations = [];  // {id,title,created,messages:[...], totalChars}
+/* ===== 状态 ===== */
+let conversations = []; // {id,title,created,messages:[...], totalChars}
 let currentConv = 0;
-let memories = [];       // {id,text,created,source}
-let viewMode = 'chats';  // chats | mems | settings
+let viewMode = 'chats'; // chats | edit | mems
 
-/* DOM */
-const btnDrawer = document.getElementById('btnDrawer');
-const btnCloseDrawer = document.getElementById('btnCloseDrawer');
-const drawer = document.getElementById('drawer');
-const drawerBackdrop = document.getElementById('drawerBackdrop');
-const drawerList = document.getElementById('drawerList');
+// 记忆：真实/结构化导入 + 手动选择加入
+let memories = []; // {id,title,text,created,source, from:{convId,convTitle,msgId,msgIndex}}
+let lastTouchedMemId = null;
+
+// 编辑覆盖层：不改原json
+let drafts = (()=>{ try{return JSON.parse(localStorage.getItem('chatviewer_drafts'))||{};}catch{return{};} })();
+function saveDrafts(){ try{localStorage.setItem('chatviewer_drafts', JSON.stringify(drafts));}catch{} }
+
+/* ===== DOM ===== */
+const main = document.getElementById('main');
+const view = document.getElementById('view');
+const navTitle = document.getElementById('navTitle');
 
 const fileInput = document.getElementById('file');
 document.getElementById('btnImport').onclick = ()=> fileInput.click();
 
-const btnPanel = document.getElementById('btnPanel');
-const btnExportPanel = document.getElementById('btnExportPanel');
-const panel = document.getElementById('panel');
-btnPanel.onclick = ()=>togglePanel(true);
-btnExportPanel.onclick = ()=>togglePanel(true);
+const btnTheme = document.getElementById('btnTheme');
+const btnExport = document.getElementById('btnExport');
+const btnSettings = document.getElementById('btnSettings');
 
-function togglePanel(forceOpen){
-  if(forceOpen===true){
-    panel.classList.add('open');
-  }else{
-    panel.classList.toggle('open');
-  }
-  layoutTick();
-}
+const panel = document.getElementById('panel');
+const pillExport = document.getElementById('pillExport');
+const pillSettings = document.getElementById('pillSettings');
+const panelExport = document.getElementById('panelExport');
+const panelSettings = document.getElementById('panelSettings');
+
+const expFmt = document.getElementById('expFmt');
+document.getElementById('btnDoExport').onclick = ()=> exportCurrentPage(expFmt.value);
 
 const selConv = document.getElementById('selConv');
 const convMeta = document.getElementById('convMeta');
 const memMeta = document.getElementById('memMeta');
 
-const expFmt = document.getElementById('expFmt');
-document.getElementById('btnDoExport').onclick = ()=> exportCurrent(expFmt.value);
-
-document.getElementById('btnTheme').onclick = ()=> toggleTheme();
-const navTitle = document.getElementById('navTitle');
-
 const rngBubble = document.getElementById('rngBubble');
 const txtBubble = document.getElementById('txtBubble');
-rngBubble.oninput = (e)=> setBubbleWidth(e.target.value);
-
 const cUser = document.getElementById('cUser');
 const cSys  = document.getElementById('cSys');
-cUser.oninput = (e)=>{ setCSS('--user', e.target.value); prefs.colors=prefs.colors||{}; prefs.colors.user=e.target.value; savePrefs(); if(viewMode==='chats') renderChats(); };
-cSys.oninput  = (e)=>{ setCSS('--system', e.target.value); prefs.colors=prefs.colors||{}; prefs.colors.system=e.target.value; savePrefs(); if(viewMode==='chats') renderChats(); };
-
-document.getElementById('btnReset').onclick = ()=> resetTheme();
-
 const nmUser = document.getElementById('nmUser');
 const nmAsst = document.getElementById('nmAsst');
 const nmSys  = document.getElementById('nmSys');
+
+document.getElementById('btnReset').onclick = ()=> resetTheme();
 document.getElementById('btnSaveNames').onclick = ()=> saveNames();
-
-document.getElementById('btnRescanMem').onclick = ()=>{
-  memories = extractMemoriesFromConversations(conversations);
-  updateMemMeta();
-  if(viewMode==='mems') renderMems();
-  toast('已重新提取记忆');
-};
-
-const main = document.getElementById('main');
-const view = document.getElementById('view');
-
-const tabChats = document.getElementById('tabChats');
-const tabMems = document.getElementById('tabMems');
-const tabSettings = document.getElementById('tabSettings');
-
-tabChats.onclick = ()=> setMode('chats');
-tabMems.onclick = ()=> setMode('mems');
-tabSettings.onclick = ()=> setMode('settings');
-
-function setActiveTab(which){
-  [tabChats,tabMems,tabSettings].forEach(t=>t.classList.remove('active'));
-  if(which==='chats') tabChats.classList.add('active');
-  if(which==='mems') tabMems.classList.add('active');
-  if(which==='settings') tabSettings.classList.add('active');
-}
-
-function setMode(mode){
-  viewMode = mode;
-  setActiveTab(mode);
-  if(mode==='chats'){
-    navTitle.textContent = conversations[currentConv]?.title || '聊天';
-    renderChats();
-  }else if(mode==='mems'){
-    navTitle.textContent = '记忆';
-    renderMems();
-  }else{
-    navTitle.textContent = '设置';
-    renderSettings();
-  }
-}
+document.getElementById('btnNewMem').onclick = ()=> openMemEditor({mode:'new'});
 
 /* Drawer */
+const btnDrawer = document.getElementById('btnDrawer');
+const btnCloseDrawer = document.getElementById('btnCloseDrawer');
+const drawer = document.getElementById('drawer');
+const drawerBackdrop = document.getElementById('drawerBackdrop');
+const drawerList = document.getElementById('drawerList');
 function openDrawer(on){
   if(window.matchMedia('(min-width:1100px)').matches) return;
   drawer.classList.toggle('open', on);
@@ -693,19 +788,75 @@ btnDrawer.onclick = ()=> openDrawer(true);
 btnCloseDrawer.onclick = ()=> openDrawer(false);
 drawerBackdrop.onclick = ()=> openDrawer(false);
 
-/* Title quiet on scroll */
+/* Tabs */
+const tabChats = document.getElementById('tabChats');
+const tabEdit  = document.getElementById('tabEdit');
+const tabMems  = document.getElementById('tabMems');
+
+tabChats.onclick = ()=> setMode('chats');
+tabEdit.onclick  = ()=> setMode('edit');
+tabMems.onclick  = ()=> setMode('mems');
+
+function setActiveTab(mode){
+  [tabChats,tabEdit,tabMems].forEach(t=>t.classList.remove('active'));
+  if(mode==='chats') tabChats.classList.add('active');
+  if(mode==='edit') tabEdit.classList.add('active');
+  if(mode==='mems') tabMems.classList.add('active');
+}
+
+/* ===== 顶部面板：再次点击收起 + 点空白收起 ===== */
+let panelTab = 'export'; // export | settings
+function setPanelTab(tab){
+  panelTab = tab;
+  pillExport.classList.toggle('active', tab==='export');
+  pillSettings.classList.toggle('active', tab==='settings');
+  panelExport.style.display = tab==='export' ? 'block' : 'none';
+  panelSettings.style.display = tab==='settings' ? 'block' : 'none';
+}
+function openPanel(tab){
+  setPanelTab(tab);
+  panel.classList.add('open');
+  btnExport.classList.toggle('active', tab==='export');
+  btnSettings.classList.toggle('active', tab==='settings');
+  layoutTick();
+}
+function closePanel(){
+  panel.classList.remove('open');
+  btnExport.classList.remove('active');
+  btnSettings.classList.remove('active');
+  layoutTick();
+}
+function togglePanel(tab){
+  const isOpen = panel.classList.contains('open');
+  const isSame = isOpen && panelTab===tab;
+  if(isSame) closePanel();
+  else openPanel(tab);
+}
+btnExport.onclick = ()=> togglePanel('export');
+btnSettings.onclick = ()=> togglePanel('settings');
+pillExport.onclick = ()=> setPanelTab('export');
+pillSettings.onclick = ()=> setPanelTab('settings');
+
+document.addEventListener('click', (e)=>{
+  if(!panel.classList.contains('open')) return;
+  const inside = e.target.closest('#panel') || e.target.closest('#btnExport') || e.target.closest('#btnSettings');
+  if(!inside) closePanel();
+});
+
+/* 标题滚动微弱变化 */
 main.addEventListener('scroll', ()=>{
   const y = main.scrollTop;
   if(y>30){ navTitle.style.opacity='0.62'; navTitle.style.transform='translateY(-1px)'; }
   else{ navTitle.style.opacity='1'; navTitle.style.transform='translateY(0)'; }
 }, {passive:true});
 
-/* Theme */
+/* ===== 主题 ===== */
+btnTheme.onclick = ()=> toggleTheme();
 function toggleTheme(){
   const isDark = !document.body.classList.contains('dark');
   document.body.classList.toggle('dark', isDark);
   prefs.dark = isDark;
-  document.getElementById('btnTheme').textContent = isDark ? '日间' : '夜间';
+  btnTheme.textContent = isDark ? '日间' : '夜间';
   savePrefs();
 }
 function resetTheme(){
@@ -716,8 +867,7 @@ function resetTheme(){
   prefs.colors = {user:'#0a84ff', system:'#af52de'};
   setBubbleWidth(86);
   savePrefs();
-  if(viewMode==='chats') renderChats();
-  if(viewMode==='mems') renderMems();
+  renderCurrent();
 }
 function setBubbleWidth(v){
   setCSS('--bubble-max', `${v}%`);
@@ -725,6 +875,11 @@ function setBubbleWidth(v){
   prefs.bubble = Number(v);
   savePrefs();
 }
+rngBubble.oninput = (e)=> setBubbleWidth(e.target.value);
+
+cUser.oninput = (e)=>{ setCSS('--user', e.target.value); prefs.colors=prefs.colors||{}; prefs.colors.user=e.target.value; savePrefs(); renderCurrent(); };
+cSys.oninput  = (e)=>{ setCSS('--system', e.target.value); prefs.colors=prefs.colors||{}; prefs.colors.system=e.target.value; savePrefs(); renderCurrent(); };
+
 function saveNames(){
   prefs.names = {
     user: nmUser.value.trim(),
@@ -733,8 +888,7 @@ function saveNames(){
   };
   savePrefs();
   toast('已保存显示名');
-  if(viewMode==='chats') renderChats();
-  if(viewMode==='mems') renderMems();
+  renderCurrent();
 }
 function displayName(role){
   const n=prefs.names||{};
@@ -744,7 +898,7 @@ function displayName(role){
   return '';
 }
 
-/* Import */
+/* ===== 导入 ===== */
 fileInput.addEventListener('change', async(e)=>{
   const files = [...(e.target.files||[])];
   if(!files.length) return;
@@ -760,11 +914,9 @@ fileInput.addEventListener('change', async(e)=>{
       const name = (f.name||'').toLowerCase();
 
       if(name.includes('memories')){
-        importedMems = parseMemories(json);
+        importedMems = importedMems.concat(parseMemories(json));
       }else{
-        // 通通按会话包尝试解析（你说的“通常只有一个 conversations.json”）
-        const convs = parseConversations(json);
-        if(convs.length) importedConvs = importedConvs.concat(convs);
+        importedConvs = importedConvs.concat(parseConversations(json));
       }
     }
 
@@ -780,19 +932,21 @@ fileInput.addEventListener('change', async(e)=>{
       updateConvMeta();
     }
 
-    // 记忆：优先用 memories.json；否则从 conversations 自动提取
+    // 记忆导入规则：
+    // 1) memories.json
+    // 2) conversations.json 中“明确结构化记忆字段白名单”
+    memories = [];
     if(importedMems.length){
-      memories = importedMems;
-    }else{
-      memories = extractMemoriesFromConversations(conversations);
+      importedMems.forEach(m=> addMemory(m, {silent:true}));
     }
+    const convMems = extractStructuredMemoriesFromConversations(conversations);
+    convMems.forEach(m=> addMemory(m, {silent:true}));
     updateMemMeta();
 
-    setMode('chats');
+    setMode(viewMode);
     toast(`导入完成：会话 ${conversations.length} 个｜记忆 ${memories.length} 条`);
-
+    closePanel();
     main.scrollTop = 0;
-    togglePanel(false);
   }catch(err){
     toast('导入失败：' + (err?.message||String(err)));
   }finally{
@@ -801,66 +955,7 @@ fileInput.addEventListener('change', async(e)=>{
   }
 });
 
-/* Build UI lists */
-function escapeHTML(s){
-  return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-function buildConvSelect(){
-  selConv.innerHTML='';
-  conversations.forEach((c,idx)=>{
-    const opt=document.createElement('option');
-    opt.value=String(idx);
-    opt.textContent = c.title || `(无标题) ${idx+1}`;
-    selConv.appendChild(opt);
-  });
-  selConv.onchange = ()=>{
-    currentConv = Number(selConv.value)||0;
-    updateConvMeta();
-    renderChats();
-    buildDrawerList();
-    main.scrollTop=0;
-  };
-}
-function buildDrawerList(){
-  drawerList.innerHTML='';
-  if(!conversations.length){
-    drawerList.innerHTML = `<div class="muted" style="padding:.6rem .65rem">还没有导入会话。</div>`;
-    return;
-  }
-  conversations.forEach((c,idx)=>{
-    const item=document.createElement('div');
-    item.className='item' + (idx===currentConv?' active':'');
-    const dateStr = c.created ? new Date(c.created*1000).toLocaleDateString() : '';
-    item.innerHTML = `<div>${escapeHTML(c.title || `(无标题) ${idx+1}`)}</div>
-                      <div class="sub">消息 ${c.messages.length}${dateStr?` · ${dateStr}`:''} · 字数 ${c.totalChars||0}</div>`;
-    item.onclick=()=>{
-      currentConv=idx;
-      selConv.value=String(idx);
-      updateConvMeta();
-      renderChats();
-      buildDrawerList();
-      openDrawer(false);
-      main.scrollTop=0;
-    };
-    drawerList.appendChild(item);
-  });
-}
-function updateConvMeta(){
-  if(!conversations.length){
-    convMeta.textContent='未导入';
-    return;
-  }
-  const c=conversations[currentConv];
-  const created = c.created ? new Date(c.created*1000).toLocaleString() : '—';
-  const total = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
-  c.totalChars = total;
-  convMeta.textContent = `创建：${created}｜消息：${c.messages.length}｜字数：${total}`;
-}
-function updateMemMeta(){
-  memMeta.textContent = `${memories.length} 条`;
-}
-
-/* Parsing conversations */
+/* ===== 会话解析 ===== */
 function parseConversations(data){
   const out = [];
   if(Array.isArray(data)){
@@ -874,7 +969,6 @@ function parseConversations(data){
   }
   return out;
 }
-
 function parseConversation(obj){
   const title = obj.title || obj.gist || obj.name || '';
   const created = obj.create_time || obj.update_time || obj.created || 0;
@@ -899,11 +993,10 @@ function parseConversation(obj){
       if(m) messages.push(m);
     });
 
-    // id -> index
     const idToIndex=new Map();
     messages.forEach((m,i)=>idToIndex.set(m._nodeId,i));
 
-    // 分支：收集为 threads
+    // branches
     pathIds.forEach(pid=>{
       const node=mapping[pid];
       const children=Array.isArray(node.children)?node.children:[];
@@ -920,31 +1013,23 @@ function parseConversation(obj){
       const at=idToIndex.get(pid);
       if(typeof at!=='number') return;
 
-      // 关键改动：把分支显示归到“AI 回复下面”
-      // 如果当前节点是 user，则分支通常是 assistant 的不同回复；将其挂到 next assistant（主线紧随其后的消息）上
-      // 如果当前节点是 assistant，则直接挂到自己下面
       const curMsg = messages[at];
       if(curMsg.role === 'user'){
-        const nextIdx = at + 1;
-        if(messages[nextIdx] && messages[nextIdx].role === 'assistant'){
-          messages[nextIdx].branches = (messages[nextIdx].branches||[]).concat(threads);
+        let j = at+1;
+        while(j < messages.length && messages[j].role !== 'assistant') j++;
+        if(j < messages.length){
+          messages[j].branches = (messages[j].branches||[]).concat(threads);
         }else{
-          // 找后续第一个 assistant
-          let j = at+1;
-          while(j < messages.length && messages[j].role !== 'assistant') j++;
-          if(j < messages.length){
-            messages[j].branches = (messages[j].branches||[]).concat(threads);
-          }else{
-            // 实在找不到，就挂自己（但 UI 仍会强制放左侧）
-            curMsg.branches = (curMsg.branches||[]).concat(threads);
-          }
+          curMsg.branches = (curMsg.branches||[]).concat(threads);
         }
       }else{
         curMsg.branches = (curMsg.branches||[]).concat(threads);
       }
     });
 
-    const cleaned = messages.filter(m=>m.content && m.content.trim().length);
+    const cleaned = messages
+      .filter(m=>m.content && m.content.trim().length)
+      .map((m, idx)=>({ ...m, _msgIndex: idx }));
     return {id:obj.id||crypto.randomUUID(), title, created, messages:cleaned, totalChars:0};
   }
 
@@ -961,7 +1046,8 @@ function normalizeLinearMessage(m){
   const content=typeof parts==='string'?parts:JSON.stringify(parts);
   const model=m.model||m.metadata?.model_slug||m.metadata?.model||"";
   const ts=m.create_time||m.ts||0;
-  return {role,content,model,ts,branches:[],meta:m.metadata||{}};
+  const msgId = m.id || m.message_id || crypto.randomUUID();
+  return {id:msgId, role,content,model,ts,branches:[],meta:m.metadata||{}, _msgIndex:0};
 }
 
 function normalizeNodeMessage(node){
@@ -977,8 +1063,9 @@ function normalizeNodeMessage(node){
 
   const model=msg.metadata?.model_slug||msg.metadata?.model||msg.model_slug||msg.model||"";
   const ts=msg.create_time||node.create_time||0;
+  const msgId = msg.id || msg.message_id || node.id || crypto.randomUUID();
 
-  return {role,content:text||"",model,ts,branches:[],_nodeId:node.id,meta:msg.metadata||{}};
+  return {id:msgId, role,content:text||"",model,ts,branches:[],_nodeId:node.id,meta:msg.metadata||{}};
 }
 
 function collectBranchThread(mapping, startId, limit=140){
@@ -999,7 +1086,7 @@ function collectBranchThread(mapping, startId, limit=140){
   return thread;
 }
 
-/* Memories parsing (memories.json if exists) */
+/* ===== 结构化记忆解析 ===== */
 function parseMemories(data){
   let arr=[];
   if(Array.isArray(data)) arr=data;
@@ -1011,133 +1098,247 @@ function parseMemories(data){
   const out=[];
   for(const it of arr){
     if(typeof it === 'string'){
-      out.push({id:crypto.randomUUID(), text:it, created:0, source:'memories.json'});
+      out.push(makeMem({title:'', text:it, created:0, source:'memories.json', from:null}));
       continue;
     }
     if(!it || typeof it!=='object') continue;
-    const text = it.memory || it.text || it.content || it.value || it.title || it.summary || '';
+    const text = it.memory || it.text || it.content || it.value || it.summary || '';
     if(!text) continue;
-    out.push({
-      id: it.id || it.memory_id || it.key || crypto.randomUUID(),
+    const title = it.title || it.name || '';
+    out.push(makeMem({
+      title: String(title||'').trim(),
       text: String(text),
       created: it.created_at || it.create_time || it.timestamp || 0,
-      source:'memories.json'
-    });
+      source:'memories.json',
+      from: null
+    }));
   }
   return out;
 }
 
-/* 关键：从 conversations 自动提取记忆 */
-function extractMemoriesFromConversations(convs){
-  const found = new Map(); // text -> item
-  const add = (text, created, source)=>{
-    const t=(text||'').trim();
-    if(!t) return;
-    if(found.has(t)) return;
-    found.set(t, {id:crypto.randomUUID(), text:t, created:created||0, source:source||'conversations'});
-  };
-
-  // 1) metadata 里可能有记忆字段（不同导出格式差异很大，做多路兼容）
-  const metaPick = (meta)=>{
-    if(!meta || typeof meta!=='object') return;
-    // 常见可能：meta.memory / meta.memories / meta.user_memory / meta.saved_memory 等
-    const candidates = [
-      meta.memory, meta.memories, meta.user_memory, meta.saved_memory, meta.saved_memories,
-      meta.personalization, meta.profile, meta.user_profile, meta.bio
-    ];
-    for(const c of candidates){
-      if(!c) continue;
-      if(typeof c === 'string') add(c, 0, 'metadata');
-      else if(Array.isArray(c)) c.forEach(x=> typeof x==='string' ? add(x,0,'metadata') : null);
-      else if(typeof c === 'object'){
-        // 若是对象，尝试抽取可能的文本字段
-        const ks = ['text','content','value','memory','summary','description','title'];
-        ks.forEach(k=>{
-          if(typeof c[k]==='string') add(c[k],0,'metadata');
-        });
-      }
-    }
-  };
-
-  // 2) 内容关键词识别（中英文）
-  const keywordHit = (s)=>{
-    const t = (s||'').toLowerCase();
-    return (
-      t.includes('memory updated') ||
-      t.includes('saved to memory') ||
-      t.includes('remembered') ||
-      t.includes('已更新记忆') ||
-      t.includes('已保存到记忆') ||
-      t.includes('记忆已更新') ||
-      t.includes('写入记忆') ||
-      t.includes('加入记忆') ||
-      t.includes('更新记忆')
-    );
-  };
-
-  // 3) 抽取模式：如果文本像“记忆：xxx”就抓 xxx
-  const extractFromText = (s)=>{
-    const str = (s||'').trim();
-    if(!str) return [];
-    const out=[];
-
-    // 中文：记忆：xxx / 已更新记忆：xxx / 写入记忆：xxx
-    const m1 = str.match(/(?:已更新记忆|记忆已更新|写入记忆|加入记忆|已保存到记忆|更新记忆)\s*[:：]\s*(.+)$/);
-    if(m1 && m1[1]) out.push(m1[1].trim());
-
-    const m2 = str.match(/^记忆\s*[:：]\s*(.+)$/);
-    if(m2 && m2[1]) out.push(m2[1].trim());
-
-    // 英文：Memory updated: xxx / Saved to memory: xxx
-    const m3 = str.match(/(?:memory updated|saved to memory)\s*:\s*(.+)$/i);
-    if(m3 && m3[1]) out.push(m3[1].trim());
-
-    return out;
-  };
+/* conversations.json：只接受白名单字段 */
+function extractStructuredMemoriesFromConversations(convs){
+  const out=[];
+  const seen=new Set();
+  const keys = [
+    'memories','memory','saved_memory','saved_memories','user_memory','user_memories',
+    'personal_memory','profile_memory'
+  ];
 
   for(const c of (convs||[])){
-    for(const m of (c.messages||[])){
-      // metadata
-      metaPick(m.meta);
+    for(let i=0;i<(c.messages||[]).length;i++){
+      const m=c.messages[i];
+      const meta = m.meta;
+      if(!meta || typeof meta!=='object') continue;
 
-      // content keyword
-      if(keywordHit(m.content)){
-        const xs = extractFromText(m.content);
-        if(xs.length) xs.forEach(x=>add(x, m.ts||0, 'content'));
-        else add(m.content, m.ts||0, 'content');
-      }else{
-        // 也可能是 system 里直接给出“记忆：xxx”
-        const xs = extractFromText(m.content);
-        if(xs.length) xs.forEach(x=>add(x, m.ts||0, 'content'));
+      for(const k of keys){
+        if(!(k in meta)) continue;
+        const v = meta[k];
+        const from = {
+          convId: c.id,
+          convTitle: c.title||'',
+          msgId: m.id,
+          msgIndex: i
+        };
+
+        const pushText = (t)=>{
+          const text = String(t||'').trim();
+          if(!text) return;
+          if(seen.has(text)) return;
+          seen.add(text);
+          out.push(makeMem({
+            title:'',
+            text,
+            created: m.ts||0,
+            source:`conversations.meta.${k}`,
+            from
+          }));
+        };
+
+        if(typeof v === 'string') pushText(v);
+        else if(Array.isArray(v)) v.forEach(x=>{
+          if(typeof x==='string') pushText(x);
+          else if(x && typeof x==='object'){
+            const tt = x.text || x.content || x.value || x.memory || x.summary;
+            if(typeof tt==='string') pushText(tt);
+          }
+        });
+        else if(v && typeof v === 'object'){
+          const tt = v.text || v.content || v.value || v.memory || v.summary;
+          if(typeof tt==='string') pushText(tt);
+        }
       }
     }
   }
-  return [...found.values()];
+  return out;
 }
 
-/* Render */
+function makeMem({title,text,created,source,from}){
+  return {
+    id: crypto.randomUUID(),
+    title: String(title||'').trim(),
+    text: String(text||''),
+    created: Number(created||0),
+    source: source||'',
+    from: from || null
+  };
+}
+
+/* 记忆严格去重（正文完全一致即拒绝） */
+function addMemory(mem, {silent=false}={}){
+  const text = (mem.text||'').trim();
+  if(!text) return false;
+
+  const exists = memories.some(x => (x.text||'').trim() === text);
+  if(exists){
+    if(!silent) toast('记忆重复，已忽略');
+    return false;
+  }
+  if(!mem.title){
+    const head = text.replace(/\s+/g,' ').slice(0, 24);
+    mem.title = head || '未命名';
+  }
+  memories.unshift(mem);
+  lastTouchedMemId = mem.id;
+  updateMemMeta();
+  return true;
+}
+
+/* ===== 列表 UI ===== */
+function buildConvSelect(){
+  selConv.innerHTML='';
+  conversations.forEach((c,idx)=>{
+    const opt=document.createElement('option');
+    opt.value=String(idx);
+    opt.textContent = c.title || `(无标题) ${idx+1}`;
+    selConv.appendChild(opt);
+  });
+  selConv.onchange = ()=>{
+    currentConv = Number(selConv.value)||0;
+    updateConvMeta();
+    buildDrawerList();
+    renderCurrent();
+    main.scrollTop=0;
+  };
+}
+function buildDrawerList(){
+  drawerList.innerHTML='';
+  if(!conversations.length){
+    drawerList.innerHTML = `<div class="muted" style="padding:.6rem .65rem">还没有导入会话。</div>`;
+    return;
+  }
+  conversations.forEach((c,idx)=>{
+    const item=document.createElement('div');
+    item.className='item' + (idx===currentConv?' active':'');
+    item.dataset.idx = String(idx);
+
+    const dateStr = c.created ? new Date(c.created*1000).toLocaleDateString() : '';
+    item.innerHTML = `<div>${escapeHTML(c.title || `(无标题) ${idx+1}`)}</div>
+                      <div class="sub">消息 ${c.messages.length}${dateStr?` · ${dateStr}`:''} · 字数 ${c.totalChars||0}</div>`;
+
+    item.onclick=()=>{
+      currentConv=idx;
+      selConv.value=String(idx);
+      updateConvMeta();
+      renderCurrent();
+      buildDrawerList();
+      openDrawer(false);
+      main.scrollTop=0;
+    };
+
+    // 长按：送入编辑区
+    attachLongPress(item, ()=>{
+      const ok = confirm(`会话：${c.title||'(无标题)'}\n\n是否“送入编辑区”？\n确定=送入编辑区；取消=不操作`);
+      if(ok){
+        currentConv = idx;
+        selConv.value = String(idx);
+        updateConvMeta();
+        buildDrawerList();
+        openDrawer(false);
+        setMode('edit');
+        main.scrollTop=0;
+      }
+    });
+
+    drawerList.appendChild(item);
+  });
+}
+
+function updateConvMeta(){
+  if(!conversations.length){
+    convMeta.textContent='未导入';
+    return;
+  }
+  const c=conversations[currentConv];
+  const created = c.created ? new Date(c.created*1000).toLocaleString() : '—';
+  const total = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
+  c.totalChars = total;
+  convMeta.textContent = `创建：${created}｜消息：${c.messages.length}｜字数：${total}`;
+}
+function updateMemMeta(){ memMeta.textContent = `${memories.length} 条`; }
+
+/* ===== 模式 ===== */
+function setMode(mode){
+  viewMode = mode;
+  setActiveTab(mode);
+
+  if(mode==='chats'){
+    navTitle.textContent = conversations[currentConv]?.title || '聊天';
+    renderChats({editable:false});
+  }else if(mode==='edit'){
+    navTitle.textContent = (conversations[currentConv]?.title || '编辑');
+    renderChats({editable:true});
+  }else{
+    navTitle.textContent = '记忆';
+    renderMems();
+  }
+}
+function renderCurrent(){ setMode(viewMode); }
+
+/* ===== 渲染聊天/编辑 ===== */
+function getConv(){ return conversations[currentConv] || null; }
 function roleClass(role){
   if(role==='user') return 'user';
   if(role==='system') return 'system';
   return 'assistant';
 }
+function getRenderedText(convId, msg){
+  const d = drafts[convId];
+  if(!d || !d.overrides) return msg.content || '';
+  const t = d.overrides[msg.id];
+  return (typeof t === 'string') ? t : (msg.content||'');
+}
+function setOverride(convId, msgId, newText){
+  drafts[convId] = drafts[convId] || {overrides:{}, updatedAt:0};
+  drafts[convId].overrides = drafts[convId].overrides || {};
+  drafts[convId].overrides[msgId] = String(newText||'');
+  drafts[convId].updatedAt = Date.now();
+  saveDrafts();
+}
 
-function renderChats(){
+function renderChats({editable=false}={}){
+  view.classList.toggle('edit-mode', editable);
   view.innerHTML='';
+
   const title = document.createElement('div');
   title.className='section-title';
-  title.textContent='聊天';
+  title.textContent = editable ? '编辑' : '聊天';
   view.appendChild(title);
 
-  if(!conversations.length){
-    view.innerHTML += `<div class="muted">还没有导入会话。点右上角“导入”选择 conversations.json。</div>`;
+  const c = getConv();
+  if(!c){
+    view.innerHTML += `<div class="muted">还没有导入会话。点右上“导入”。</div>`;
     return;
   }
 
-  const c = conversations[currentConv];
-  navTitle.textContent = c.title || '聊天';
+  const hint = document.createElement('div');
+  hint.className='muted';
+  hint.innerHTML = editable
+    ? '编辑页：每条气泡旁有“编辑”。只改变本地覆盖层，不改原始 JSON。导出会导出编辑后的版本。'
+    : '聊天页：选中文字后会出现“加入记忆”的浮层按钮。长按气泡空白处可复制整段。导出会导出原始版本。';
+  view.appendChild(hint);
 
-  c.messages.forEach((m)=>{
+  c.messages.forEach((m, idx)=>{
     const name=displayName(m.role);
     if(name){
       const nm=document.createElement('div');
@@ -1146,25 +1347,75 @@ function renderChats(){
       view.appendChild(nm);
     }
 
+    const shownText = editable ? getRenderedText(c.id, m) : (m.content||'');
     const meta=document.createElement('div');
     meta.className='meta ' + (m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center');
     const ts = m.ts ? new Date(m.ts*1000).toLocaleString() : '';
     const model = m.model || '';
-    const count = (m.content||'').length;
     meta.innerHTML = `${ts?`<span>${escapeHTML(ts)}</span>`:''}
                       ${model?`<span class="chip">${escapeHTML(model)}</span>`:''}
-                      <span>字数：${count}</span>`;
+                      <span>字数：${(shownText||'').length}</span>`;
     view.appendChild(meta);
+
+    const wrap=document.createElement('div');
+    wrap.className='msg-wrap ' + (m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center');
+
+    const tools=document.createElement('div');
+    tools.className='msg-tools';
+
+    if(editable){
+      const eb=document.createElement('button');
+      eb.className='toolbtn';
+      eb.textContent='编辑';
+      eb.onclick=()=> openMessageEditor({conv:c, msg:m, idx});
+      tools.appendChild(eb);
+
+      const rb=document.createElement('button');
+      rb.className='toolbtn';
+      rb.textContent='还原';
+      rb.onclick=()=>{
+        if(drafts[c.id]?.overrides?.[m.id] !== undefined){
+          delete drafts[c.id].overrides[m.id];
+          drafts[c.id].updatedAt = Date.now();
+          saveDrafts();
+          renderChats({editable:true});
+          toast('已还原该条为原文');
+        }
+      };
+      tools.appendChild(rb);
+    }
 
     const bubble=document.createElement('div');
     bubble.className='msg ' + roleClass(m.role);
-    bubble.innerText = m.content || '';
-    view.appendChild(bubble);
+    bubble.innerText = shownText || '';
+    bubble.dataset.convId = c.id;
+    bubble.dataset.msgId  = m.id;
+    bubble.dataset.msgIndex = String(idx);
 
-    // 分支翻页条（永远放在左侧显示）
-    if(Array.isArray(m.branches) && m.branches.length){
-      const wrap=document.createElement('div');
-      wrap.className='branch-wrap';
+    // 长按空白复制整段（不抢选词）
+    attachLongPress(bubble, ()=>{
+      const sel = window.getSelection();
+      if(sel && String(sel).trim()) return;
+      copyText(shownText||'');
+    });
+
+    // 排版顺序：AI 左侧工具在气泡外侧；用户右侧工具在气泡外侧
+    if(m.role==='assistant'){
+      wrap.appendChild(tools);
+      wrap.appendChild(bubble);
+    }else if(m.role==='user'){
+      wrap.appendChild(bubble);
+      wrap.appendChild(tools);
+    }else{
+      wrap.appendChild(bubble);
+    }
+
+    view.appendChild(wrap);
+
+    // 回溯：放在 AI 侧，并挂在 AI 气泡后
+    if(m.role==='assistant' && Array.isArray(m.branches) && m.branches.length){
+      const bwrap=document.createElement('div');
+      bwrap.className='branch-wrap';
 
       const bar=document.createElement('div');
       bar.className='branch-bar';
@@ -1182,12 +1433,12 @@ function renderChats(){
       mini.className='mini';
       mini.textContent = `＜1/${m.branches.length}＞`;
 
-      const hint=document.createElement('div');
-      hint.className='hint';
-      hint.textContent='回溯分支（点展开查看）';
+      const hint2=document.createElement('div');
+      hint2.className='hint';
+      hint2.textContent='回溯分支（点展开查看）';
 
       mid.appendChild(mini);
-      mid.appendChild(hint);
+      mid.appendChild(hint2);
 
       const rightBtn=document.createElement('button');
       rightBtn.className='bbtn';
@@ -1248,26 +1499,29 @@ function renderChats(){
         if(open){
           viewBox.style.display='none';
           toggleBtn.textContent='展开';
-          hint.textContent='回溯分支（点展开查看）';
+          hint2.textContent='回溯分支（点展开查看）';
         }else{
           renderBranchPage();
           viewBox.style.display='block';
           toggleBtn.textContent='收起';
-          hint.textContent='左右翻页切换分支';
+          hint2.textContent='左右翻页切换分支';
         }
       };
 
-      wrap.appendChild(bar);
-      wrap.appendChild(viewBox);
-      view.appendChild(wrap);
+      bwrap.appendChild(bar);
+      bwrap.appendChild(viewBox);
+      view.appendChild(bwrap);
     }
   });
 
   updateConvMeta();
 }
 
+/* ===== 渲染记忆 ===== */
 function renderMems(){
+  view.classList.remove('edit-mode');
   view.innerHTML='';
+
   const title=document.createElement('div');
   title.className='section-title';
   title.textContent='记忆';
@@ -1276,12 +1530,12 @@ function renderMems(){
   const info=document.createElement('div');
   info.className='muted';
   info.innerHTML = memories.length
-    ? `已提取 <b>${memories.length}</b> 条记忆。`
-    : `未提取到记忆。你可以去“设置”里点“从会话重新提取记忆”，或确认导入的确是完整 conversations.json。`;
+    ? `当前记忆 <b>${memories.length}</b> 条。支持：标题、编辑、删除、单独导出、跳回来源。`
+    : `当前 0 条记忆。请导入 memories.json，或确保 conversations.json 内含明确的结构化记忆字段（白名单）。`;
   view.appendChild(info);
 
   const searchWrap=document.createElement('div');
-  searchWrap.className='mem-search';
+  searchWrap.className='row';
   searchWrap.innerHTML = `
     <span class="badge">搜索</span>
     <input type="text" id="memQ" placeholder="输入关键字…" style="width:14rem">
@@ -1301,7 +1555,9 @@ function renderMems(){
   function draw(query=''){
     list.innerHTML='';
     const q = query.trim().toLowerCase();
-    const arr = q ? memories.filter(m=>(m.text||'').toLowerCase().includes(q)) : memories;
+    const arr = q ? memories.filter(m=>{
+      return (m.title||'').toLowerCase().includes(q) || (m.text||'').toLowerCase().includes(q);
+    }) : memories;
 
     if(!memories.length){
       list.innerHTML = `<div class="muted">（暂无记忆数据）</div>`;
@@ -1312,35 +1568,59 @@ function renderMems(){
       return;
     }
 
-    arr.forEach((m,idx)=>{
+    arr.forEach(m=>{
       const card=document.createElement('div');
       card.className='card';
-      card.dataset.memIdx = String(idx);
 
       const top=document.createElement('div');
       top.className='meta';
       const ts = (m.created && typeof m.created==='number' && m.created>1000000000)
         ? new Date(m.created*1000).toLocaleString()
         : '';
-      top.innerHTML = `<span class="chip">来源：${escapeHTML(m.source||'会话')}</span>
-                       ${ts?`<span>${escapeHTML(ts)}</span>`:''}
-                       <span>字数：${(m.text||'').length}</span>
-                       <button class="btn" style="padding:.22rem .55rem" data-copy="1">复制</button>`;
+      const src = m.source || 'memory';
+      const hasFrom = !!m.from;
+      top.innerHTML = `
+        <span class="chip">来源：${escapeHTML(src)}</span>
+        ${ts?`<span>${escapeHTML(ts)}</span>`:''}
+        <span>字数：${(m.text||'').length}</span>
+        ${hasFrom?`<button class="btn" style="padding:.18rem .52rem" data-jump="1">跳回</button>`:''}
+      `;
       card.appendChild(top);
+
+      const h=document.createElement('div');
+      h.style.fontWeight='800';
+      h.style.margin='.1rem 0 .35rem 0';
+      h.textContent = m.title || '未命名';
+      card.appendChild(h);
 
       const line=document.createElement('div');
       line.className='mem-line';
       line.textContent = m.text || '';
       card.appendChild(line);
 
-      card.querySelector('[data-copy]').onclick = async()=>{
-        try{
-          await navigator.clipboard.writeText(m.text||'');
-          toast('已复制');
-        }catch{
-          toast('复制失败（浏览器限制）');
-        }
-      };
+      const actions=document.createElement('div');
+      actions.className='mem-actions';
+      actions.innerHTML = `
+        <button class="btn" data-copy="1">复制</button>
+        <button class="btn" data-edit="1">编辑</button>
+        <button class="btn" data-del="1">删除</button>
+        <button class="btn" data-exp="1">导出</button>
+      `;
+      card.appendChild(actions);
+
+      const btnCopy = actions.querySelector('[data-copy]');
+      const btnEdit = actions.querySelector('[data-edit]');
+      const btnDel  = actions.querySelector('[data-del]');
+      const btnExp  = actions.querySelector('[data-exp]');
+      const btnJump = top.querySelector('[data-jump]');
+
+      btnCopy.onclick = ()=> { lastTouchedMemId = m.id; copyText(m.text||''); };
+      btnEdit.onclick = ()=> { lastTouchedMemId = m.id; openMemEditor({mode:'edit', memId:m.id}); };
+      btnDel.onclick  = ()=> { lastTouchedMemId = m.id; confirmDeleteMemory(m.id); };
+      btnExp.onclick  = ()=> { lastTouchedMemId = m.id; exportMemory(m.id, expFmt.value || 'txt'); };
+      if(btnJump){
+        btnJump.onclick = ()=> { lastTouchedMemId = m.id; jumpToMemorySource(m.id); };
+      }
 
       list.appendChild(card);
     });
@@ -1351,64 +1631,453 @@ function renderMems(){
   draw('');
 }
 
-function renderSettings(){
-  view.innerHTML='';
-  const title=document.createElement('div');
-  title.className='section-title';
-  title.textContent='设置';
-  view.appendChild(title);
-
-  const card=document.createElement('div');
-  card.className='card';
-  card.innerHTML = `
-    <div class="muted">
-      <div><b>说明</b></div>
-      <div>1) 页面已做 iPhone Safari 铺满适配：顶部/底部吃安全区，内容区固定滚动。</div>
-      <div>2) 回溯分支在 AI（左侧）回复下方显示翻页条：＜1/x＞，默认收起。</div>
-      <div>3) 记忆默认从 conversations.json 自动提取；也可点面板里的“从会话重新提取记忆”。</div>
-      <div style="margin-top:.6rem"><b>当前数据</b></div>
-      <div>会话：${conversations.length} 个</div>
-      <div>记忆：${memories.length} 条</div>
-    </div>
-  `;
-  view.appendChild(card);
+/* ===== 复制 ===== */
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text||'');
+    toast('已复制');
+  }catch{
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text||'';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast('已复制');
+    }catch{
+      toast('复制失败（浏览器限制）');
+    }
+  }
 }
 
-/* Export formats */
-function exportCurrent(fmt){
-  if(!conversations.length){
-    toast('没有可导出的会话');
+/* ===== 长按（不抢选词） ===== */
+function attachLongPress(el, onLong){
+  let timer=null;
+  let moved=false;
+  const threshold=520;
+
+  const clear=()=>{ if(timer){clearTimeout(timer);timer=null;} };
+
+  el.addEventListener('touchstart', ()=>{
+    moved=false;
+    clear();
+    timer=setTimeout(()=>{
+      if(!moved) onLong();
+    }, threshold);
+  }, {passive:true});
+
+  el.addEventListener('touchmove', ()=>{ moved=true; clear(); }, {passive:true});
+  el.addEventListener('touchend', clear, {passive:true});
+  el.addEventListener('touchcancel', clear, {passive:true});
+
+  el.addEventListener('mousedown', (e)=>{
+    if(e.button!==0) return;
+    moved=false;
+    clear();
+    timer=setTimeout(()=>{ if(!moved) onLong(); }, threshold);
+  });
+  el.addEventListener('mousemove', ()=>{ moved=true; clear(); });
+  el.addEventListener('mouseup', clear);
+  el.addEventListener('mouseleave', clear);
+}
+
+/* ===== 选中文字 -> 浮层“加入记忆” ===== */
+const selFloat = document.getElementById('selFloat');
+const btnSelToMem = document.getElementById('btnSelToMem');
+
+let lastSelectionText = '';
+let lastSelectionFrom = null; // {convId,convTitle,msgId,msgIndex}
+
+function hideSelFloat(){ selFloat.classList.remove('show'); }
+function showSelFloatAt(x,y){
+  const w = 110;
+  selFloat.style.left = `${Math.max(10, Math.min(window.innerWidth-w-10, x - w/2))}px`;
+  selFloat.style.top  = `${Math.max(10, y - 52)}px`;
+  selFloat.classList.add('show');
+}
+
+document.addEventListener('selectionchange', ()=>{
+  const sel = window.getSelection();
+  const text = sel ? String(sel).trim() : '';
+  if(!text){
+    lastSelectionText='';
+    lastSelectionFrom=null;
+    hideSelFloat();
     return;
   }
-  const c = conversations[currentConv];
+  // 只在聊天/编辑页起作用
+  if(viewMode !== 'chats' && viewMode !== 'edit'){ hideSelFloat(); return; }
 
-  if(fmt==='txt') return exportTXT(c);
-  if(fmt==='json') return exportJSON(c);
-  return exportHTML(c);
+  const range = sel.rangeCount ? sel.getRangeAt(0) : null;
+  if(!range){ hideSelFloat(); return; }
+
+  const node = range.commonAncestorContainer.nodeType===1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement;
+  if(!node){ hideSelFloat(); return; }
+
+  const bubble = node.closest('.msg');
+  if(!bubble){ hideSelFloat(); return; }
+
+  const convId = bubble.dataset.convId;
+  const msgId  = bubble.dataset.msgId;
+  const msgIndex = Number(bubble.dataset.msgIndex||0);
+  const conv = conversations.find(x=>x.id===convId);
+  if(!conv){ hideSelFloat(); return; }
+
+  const rect = range.getBoundingClientRect();
+  if(!rect || (rect.width===0 && rect.height===0)){
+    hideSelFloat(); return;
+  }
+
+  lastSelectionText = text;
+  lastSelectionFrom = {
+    convId,
+    convTitle: conv.title||'',
+    msgId,
+    msgIndex
+  };
+
+  showSelFloatAt(rect.left + rect.width/2, rect.top + window.scrollY);
+});
+
+btnSelToMem.onclick = ()=>{
+  if(!lastSelectionText.trim()){
+    toast('未选中内容');
+    return;
+  }
+  openMemEditor({
+    mode:'new',
+    presetText:lastSelectionText,
+    presetFrom:lastSelectionFrom
+  });
+  hideSelFloat();
+};
+
+/* ===== Sheet（编辑消息 / 新增记忆 / 编辑记忆） ===== */
+const sheetBackdrop = document.getElementById('sheetBackdrop');
+const sheet = document.getElementById('sheet');
+const sheetTitle = document.getElementById('sheetTitle');
+const sheetText = document.getElementById('sheetText');
+const sheetMeta = document.getElementById('sheetMeta');
+const sheetClose = document.getElementById('sheetClose');
+const sheetCancel = document.getElementById('sheetCancel');
+const sheetDone = document.getElementById('sheetDone');
+
+let sheetMode = null; // 'mem-new'|'mem-edit'|'msg-edit'
+let sheetPayload = null;
+
+function openSheet({title, text, meta, mode, payload}){
+  sheetMode = mode;
+  sheetPayload = payload || null;
+  sheetTitle.textContent = title || '编辑';
+  sheetText.value = text || '';
+  sheetMeta.textContent = meta || '';
+  sheetBackdrop.classList.add('show');
+  sheet.classList.add('show');
+}
+function closeSheet(){
+  sheetBackdrop.classList.remove('show');
+  sheet.classList.remove('show');
+  sheetMode=null;
+  sheetPayload=null;
+}
+sheetClose.onclick = closeSheet;
+sheetCancel.onclick = closeSheet;
+sheetBackdrop.onclick = closeSheet;
+
+function openMemEditor({mode, memId, presetText, presetFrom}){
+  if(mode==='new'){
+    const text = presetText || '';
+    const meta = presetFrom ? `来源：${presetFrom.convTitle||''}｜第 ${presetFrom.msgIndex+1} 条` : '';
+    openSheet({
+      title: '新增记忆（可编辑标题）',
+      text: text,
+      meta: meta + (meta? '｜':'' ) + '完成后可在记忆页编辑标题与导出',
+      mode: 'mem-new',
+      payload: {from: presetFrom || null}
+    });
+    return;
+  }
+  if(mode==='edit'){
+    const mem = memories.find(x=>x.id===memId);
+    if(!mem){ toast('记忆不存在'); return; }
+    const meta = `${mem.source||''}${mem.from?`｜来源：${mem.from.convTitle||''}｜第 ${mem.from.msgIndex+1} 条`:''}`;
+    openSheet({
+      title: '编辑记忆（第一行=标题，空行后为正文）',
+      text: `${mem.title||''}\n\n${mem.text||''}`,
+      meta: meta,
+      mode: 'mem-edit',
+      payload: {memId}
+    });
+  }
 }
 
-function downloadBlob(blob, filename){
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  setTimeout(()=>{
-    a.click();
-    URL.revokeObjectURL(url);
-  },0);
+function confirmDeleteMemory(memId){
+  const mem = memories.find(x=>x.id===memId);
+  if(!mem) return;
+  const ok = confirm(`是否删除该记忆？\n\n${mem.title||'未命名'}`);
+  if(!ok) return;
+  memories = memories.filter(x=>x.id!==memId);
+  updateMemMeta();
+  if(viewMode==='mems') renderMems();
+  toast('已删除');
 }
 
-function safeName(name){
-  return (name||'chat_export').replace(/[\\/:*?"<>|]/g,'_').trim() || 'chat_export';
+function exportMemory(memId, fmt){
+  const mem = memories.find(x=>x.id===memId);
+  if(!mem){ toast('记忆不存在'); return; }
+  const title = mem.title || 'memory';
+
+  if(fmt==='json'){
+    const payload = {
+      id: mem.id,
+      title: mem.title,
+      text: mem.text,
+      created: mem.created,
+      source: mem.source,
+      from: mem.from || null
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
+    downloadBlob(blob, `memory_${safeName(title)}.json`);
+    return;
+  }
+
+  if(fmt==='html'){
+    const html = `<!doctype html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>${escapeHTML(title)}</title>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f2f2f7;color:#111}
+.wrap{max-width:900px;margin:0 auto;padding:1rem .9rem}
+h2{margin:.2rem 0 .7rem 0}
+.meta{color:rgba(60,60,67,.60);font-size:.85rem;margin:.2rem 0 .8rem 0}
+pre{white-space:pre-wrap;line-height:1.6;background:#fff;border:1px solid rgba(60,60,67,.18);border-radius:14px;padding:.8rem}
+</style></head><body><div class="wrap">
+<h2>${escapeHTML(title)}</h2>
+<div class="meta">来源：${escapeHTML(mem.source||'')} ${mem.from?`｜${escapeHTML(mem.from.convTitle||'')}｜第 ${mem.from.msgIndex+1} 条`:''}</div>
+<pre>${escapeHTML(mem.text||'')}</pre>
+</div></body></html>`;
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    downloadBlob(blob, `memory_${safeName(title)}.html`);
+    return;
+  }
+
+  // txt
+  const lines = [];
+  lines.push(`# ${mem.title||'未命名'}`);
+  lines.push(`来源：${mem.source||''}${mem.from?`｜${mem.from.convTitle||''}｜第 ${mem.from.msgIndex+1} 条`:''}`);
+  if(mem.created && mem.created>1000000000){
+    lines.push(`时间：${new Date(mem.created*1000).toLocaleString()}`);
+  }
+  lines.push('');
+  lines.push(mem.text||'');
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  downloadBlob(blob, `memory_${safeName(title)}.txt`);
 }
 
-function exportTXT(c){
+function exportAllMemories(fmt){
+  if(memories.length===0){ toast('没有记忆可导出'); return; }
+
+  if(fmt==='json'){
+    const payload = memories.map(m=>({
+      id:m.id, title:m.title, text:m.text, created:m.created, source:m.source, from:m.from||null
+    }));
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
+    downloadBlob(blob, `memories_all.json`);
+    toast('已导出全部记忆');
+    return;
+  }
+
+  if(fmt==='html'){
+    const items = memories.map(m=>{
+      const ts = (m.created && m.created>1000000000) ? new Date(m.created*1000).toLocaleString() : '';
+      const from = m.from ? `｜${escapeHTML(m.from.convTitle||'')}｜第 ${m.from.msgIndex+1} 条` : '';
+      return `<div class="card">
+        <h3>${escapeHTML(m.title||'未命名')}</h3>
+        <div class="meta">来源：${escapeHTML(m.source||'')}${from}${ts?`｜${escapeHTML(ts)}`:''}｜字数：${(m.text||'').length}</div>
+        <pre>${escapeHTML(m.text||'')}</pre>
+      </div>`;
+    }).join('\n');
+
+    const html = `<!doctype html><html lang="zh"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>全部记忆</title>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f2f2f7;color:#111}
+.wrap{max-width:980px;margin:0 auto;padding:1rem .9rem}
+.card{background:#fff;border:1px solid rgba(60,60,67,.18);border-radius:14px;padding:.8rem;margin:.6rem 0}
+h3{margin:.15rem 0 .45rem 0}
+.meta{color:rgba(60,60,67,.60);font-size:.85rem;margin:.1rem 0 .5rem 0}
+pre{white-space:pre-wrap;line-height:1.6;background:rgba(0,0,0,.03);border-radius:12px;padding:.7rem;margin:.2rem 0 0 0}
+</style></head><body><div class="wrap">
+<h2 style="margin:.2rem 0 .8rem 0">全部记忆（${memories.length} 条）</h2>
+${items}
+</div></body></html>`;
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    downloadBlob(blob, `memories_all.html`);
+    toast('已导出全部记忆');
+    return;
+  }
+
   const lines=[];
-  lines.push(`# ${c.title || '(无标题)'}\n`);
-  lines.push(`创建：${c.created?new Date(c.created*1000).toLocaleString():'—'}\n`);
-  lines.push(`消息数：${c.messages.length}  字数：${c.totalChars||0}\n`);
-  lines.push(`\n----------------------------------------\n`);
+  lines.push(`# 全部记忆（${memories.length} 条）`);
+  lines.push('');
+  memories.forEach((m, i)=>{
+    lines.push(`(${i+1}) ${m.title||'未命名'}`);
+    lines.push(`来源：${m.source||''}${m.from?`｜${m.from.convTitle||''}｜第 ${m.from.msgIndex+1} 条`:''}`);
+    if(m.created && m.created>1000000000) lines.push(`时间：${new Date(m.created*1000).toLocaleString()}`);
+    lines.push(m.text||'');
+    lines.push('----------------------------------------');
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  downloadBlob(blob, `memories_all.txt`);
+  toast('已导出全部记忆');
+}
 
+function jumpToMemorySource(memId){
+  const mem = memories.find(x=>x.id===memId);
+  if(!mem || !mem.from){ toast('该记忆没有来源定位'); return; }
+  const {convId, msgIndex} = mem.from;
+  const idx = conversations.findIndex(c=>c.id===convId);
+  if(idx<0){ toast('找不到对应会话'); return; }
+
+  currentConv = idx;
+  selConv.value = String(idx);
+  updateConvMeta();
+  buildDrawerList();
+  setMode('chats');
+
+  setTimeout(()=>{
+    const bubbles = document.querySelectorAll('.msg');
+    const target = [...bubbles].find(b=>Number(b.dataset.msgIndex)===Number(msgIndex));
+    if(target){
+      target.scrollIntoView({behavior:'smooth', block:'center'});
+      target.style.outline = '2px solid color-mix(in oklab, var(--user) 55%, transparent)';
+      setTimeout(()=>target.style.outline='none', 900);
+    }
+  }, 80);
+}
+
+/* ===== 编辑消息 ===== */
+function openMessageEditor({conv, msg, idx}){
+  const shown = getRenderedText(conv.id, msg);
+  const meta = `${conv.title||''}｜第 ${idx+1} 条｜角色：${msg.role}${msg.model?`｜模型：${msg.model}`:''}`;
+  openSheet({
+    title: '编辑该条消息',
+    text: shown,
+    meta,
+    mode: 'msg-edit',
+    payload: {convId: conv.id, msgId: msg.id}
+  });
+}
+
+/* Sheet Done */
+document.getElementById('sheetDone').onclick = ()=>{
+  const text = sheetText.value || '';
+
+  if(sheetMode==='msg-edit'){
+    const {convId, msgId} = sheetPayload || {};
+    if(!convId || !msgId){ closeSheet(); return; }
+    setOverride(convId, msgId, text);
+    closeSheet();
+    if(viewMode==='edit') renderChats({editable:true});
+    toast('已更新该条内容');
+    return;
+  }
+
+  if(sheetMode==='mem-new'){
+    const from = sheetPayload?.from || null;
+    const raw = text.trim();
+    if(!raw){
+      toast('内容为空，未创建');
+      closeSheet();
+      return;
+    }
+    const mem = makeMem({
+      title:'',
+      text: raw,
+      created: Math.floor(Date.now()/1000),
+      source: from ? 'manual.selection' : 'manual.new',
+      from: from
+    });
+    const ok = addMemory(mem, {silent:false});
+    closeSheet();
+    if(ok && viewMode==='mems') renderMems();
+    return;
+  }
+
+  if(sheetMode==='mem-edit'){
+    const memId = sheetPayload?.memId;
+    const mem = memories.find(x=>x.id===memId);
+    if(!mem){ toast('记忆不存在'); closeSheet(); return; }
+
+    const all = text.replace(/\r\n/g,'\n');
+    const parts = all.split('\n');
+    const t = (parts.shift()||'').trim();
+    while(parts.length && parts[0].trim()==='') parts.shift();
+    const body = parts.join('\n').trim();
+
+    if(!body){
+      toast('正文为空，未保存');
+      return;
+    }
+    const dup = memories.some(x=>x.id!==mem.id && (x.text||'').trim()===body);
+    if(dup){
+      toast('记忆重复，已忽略');
+      return;
+    }
+    mem.title = t || (body.replace(/\s+/g,' ').slice(0,24) || '未命名');
+    mem.text = body;
+    lastTouchedMemId = mem.id;
+    closeSheet();
+    if(viewMode==='mems') renderMems();
+    toast('已更新记忆');
+    return;
+  }
+
+  closeSheet();
+};
+
+/* Sheet 控制 */
+function closeSheet(){
+  sheetBackdrop.classList.remove('show');
+  sheet.classList.remove('show');
+  sheetMode=null;
+  sheetPayload=null;
+}
+document.getElementById('sheetClose').onclick = closeSheet;
+document.getElementById('sheetCancel').onclick = closeSheet;
+sheetBackdrop.onclick = closeSheet;
+
+/* openSheet */
+function openSheet({title, text, meta, mode, payload}){
+  sheetMode = mode;
+  sheetPayload = payload || null;
+  sheetTitle.textContent = title || '编辑';
+  sheetText.value = text || '';
+  sheetMeta.textContent = meta || '';
+  sheetBackdrop.classList.add('show');
+  sheet.classList.add('show');
+}
+
+/* ===== 导出当前页面（你在看哪个就导哪个） ===== */
+function exportCurrentPage(fmt){
+  if(viewMode==='mems'){
+    if(memories.length===0){ toast('没有记忆可导出'); return; }
+    if(lastTouchedMemId){
+      exportMemory(lastTouchedMemId, fmt);
+    }else{
+      exportAllMemories(fmt);
+    }
+    return;
+  }
+
+  const c = getConv();
+  if(!c){ toast('没有可导出的会话'); return; }
+  const useEdited = (viewMode==='edit');
+  exportConversation(c, fmt, {useEdited});
+}
+
+function exportConversation(c, fmt, {useEdited}={}){
   const roleLabel = (r)=>{
     const n=prefs.names||{};
     if(r==='user') return n.user || 'User';
@@ -1417,14 +2086,117 @@ function exportTXT(c){
     return r;
   };
 
+  if(fmt==='json'){
+    const payload = {
+      title: c.title || '',
+      created: c.created || 0,
+      exported_view: useEdited ? 'edit' : 'chat',
+      messages: c.messages.map(m=>({
+        id: m.id,
+        role: m.role,
+        ts: m.ts||0,
+        model: m.model||'',
+        content: useEdited ? getRenderedText(c.id, m) : (m.content||''),
+        branches: (m.branches||[]).map(thread=>thread.map(b=>({
+          role:b.role, ts:b.ts||0, model:b.model||'', content:b.content||''
+        })))
+      }))
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
+    downloadBlob(blob, `${safeName(c.title)}${useEdited?'_edited':''}.json`);
+    return;
+  }
+
+  if(fmt==='html'){
+    const rootStyle = getComputedStyle(document.documentElement);
+    const cssVars = ['--user','--system','--bubble-max']
+      .map(v=>`${v}:${rootStyle.getPropertyValue(v).trim()}`).join(';');
+
+    const metaLine = (role, ts, model, text)=>{
+      const side = role==='user'?'align-right':role==='assistant'?'align-left':'align-center';
+      return `<div class="meta ${side}">
+        ${ts?`<span>${escapeHTML(ts)}</span>`:''}
+        ${model?`<span class="chip">${escapeHTML(model)}</span>`:''}
+        <span>字数：${(text||'').length}</span>
+      </div>`;
+    };
+
+    const bubble = (role, text)=>{
+      const cls = role==='user'?'user':(role==='system'?'system':'assistant');
+      return `<div class="msg ${cls}">${escapeHTML(text||'')}</div>`;
+    };
+
+    let body = '';
+    c.messages.forEach((m)=>{
+      const ts = m.ts ? new Date(m.ts*1000).toLocaleString() : '';
+      const content = useEdited ? getRenderedText(c.id, m) : (m.content||'');
+      body += metaLine(m.role, ts, m.model||'', content);
+      body += bubble(m.role, content);
+
+      if(m.role==='assistant' && Array.isArray(m.branches) && m.branches.length){
+        body += `<details class="branch"><summary>回溯分支（共 ${m.branches.length} 条，点展开）</summary><div class="branch-inner">`;
+        m.branches.forEach((thread,i)=>{
+          body += `<div class="chip">分支 ${i+1}/${m.branches.length}</div>`;
+          thread.forEach(b=>{
+            const ts2 = b.ts ? new Date(b.ts*1000).toLocaleString() : '';
+            body += metaLine(b.role, ts2, b.model||'', b.content||'');
+            body += bubble(b.role, b.content||'');
+          });
+          body += `<div style="height:.6rem"></div>`;
+        });
+        body += `</div></details>`;
+      }
+      body += `<div style="height:.35rem;border-top:1px solid rgba(60,60,67,.12);margin:.55rem 0"></div>`;
+    });
+
+    const html = `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>${escapeHTML(c.title||'导出')}</title>
+<style>
+:root{${cssVars};--corner:18px}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f2f2f7;color:#111}
+.container{max-width:980px;margin:0 auto;padding:1rem .75rem 1.2rem .75rem;display:flex;flex-direction:column}
+.meta{font-size:.72rem;color:rgba(60,60,67,.60);display:flex;gap:.45rem;flex-wrap:wrap;margin:.05rem .18rem}
+.align-right{margin-left:auto;text-align:right}
+.align-left{margin-right:auto;text-align:left}
+.align-center{margin-left:auto;margin-right:auto;text-align:center}
+.chip{padding:.08rem .4rem;border-radius:999px;background:rgba(0,0,0,.06);border:1px solid rgba(60,60,67,.18)}
+.msg{max-width:var(--bubble-max);border-radius:var(--corner);padding:.55rem .72rem;line-height:1.55;white-space:pre-wrap;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.msg.user{background:var(--user);color:#fff;margin-left:auto}
+.msg.assistant{background:#fff;color:#111;margin-right:auto}
+.msg.system{background:rgba(175,82,222,.18);border:1px solid rgba(175,82,222,.22);margin-left:auto;margin-right:auto}
+details.branch{margin:.35rem 0;border:1px solid rgba(60,60,67,.18);border-radius:12px;padding:.4rem .55rem;background:rgba(255,255,255,.7)}
+details.branch summary{cursor:pointer;font-weight:750}
+.branch-inner{margin-top:.35rem;display:flex;flex-direction:column;gap:.2rem}
+</style></head><body>
+<div class="container">
+  <h2 style="margin:.2rem 0 .6rem 0">${escapeHTML(c.title||'(无标题)')}${useEdited?'（编辑稿）':''}</h2>
+  ${body}
+</div>
+</body></html>`;
+
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    downloadBlob(blob, `${safeName(c.title)}${useEdited?'_edited':''}.html`);
+    return;
+  }
+
+  // txt
+  const lines=[];
+  lines.push(`# ${c.title || '(无标题)'}${useEdited?'（编辑稿）':''}\n`);
+  lines.push(`创建：${c.created?new Date(c.created*1000).toLocaleString():'—'}`);
+  lines.push(`消息数：${c.messages.length}  字数：${c.totalChars||0}`);
+  lines.push('');
+  lines.push('----------------------------------------');
+
   c.messages.forEach((m,idx)=>{
     const ts = m.ts?new Date(m.ts*1000).toLocaleString():'';
     const model = m.model?`[${m.model}]`:'';
+    const content = useEdited ? getRenderedText(c.id, m) : (m.content||'');
     lines.push(`(${idx+1}) ${roleLabel(m.role)} ${model} ${ts}`.trim());
-    lines.push(m.content||'');
+    lines.push(content||'');
     lines.push('');
 
-    if(Array.isArray(m.branches) && m.branches.length){
+    if(m.role==='assistant' && Array.isArray(m.branches) && m.branches.length){
       lines.push(`  [回溯分支 ${m.branches.length} 条]`);
       m.branches.forEach((thread,i)=>{
         lines.push(`  - 分支 ${i+1}/${m.branches.length}`);
@@ -1436,129 +2208,21 @@ function exportTXT(c){
         });
         lines.push('');
       });
-      lines.push(`----------------------------------------\n`);
+      lines.push('----------------------------------------');
     }else{
-      lines.push(`----------------------------------------\n`);
+      lines.push('----------------------------------------');
     }
   });
 
   const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
-  downloadBlob(blob, `${safeName(c.title)}.txt`);
+  downloadBlob(blob, `${safeName(c.title)}${useEdited?'_edited':''}.txt`);
 }
 
-function exportJSON(c){
-  const payload = {
-    title: c.title || '',
-    created: c.created || 0,
-    messages: c.messages.map(m=>({
-      role: m.role,
-      ts: m.ts||0,
-      model: m.model||'',
-      content: m.content||'',
-      branches: (m.branches||[]).map(thread=>thread.map(b=>({
-        role:b.role, ts:b.ts||0, model:b.model||'', content:b.content||''
-      })))
-    }))
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
-  downloadBlob(blob, `${safeName(c.title)}.json`);
-}
-
-function exportHTML(c){
-  const rootStyle = getComputedStyle(document.documentElement);
-  const cssVars = [
-    '--user','--system','--bubble-max','--bg-light','--text-light','--sep-light','--chip-light'
-  ].map(v=>`${v}:${rootStyle.getPropertyValue(v).trim()}`).join(';');
-
-  const esc = s => (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
-  const roleClass = (r)=> r==='user'?'user':(r==='system'?'system':'assistant');
-
-  const metaLine = (role, ts, model, text)=>{
-    const side = role==='user'?'align-right':role==='assistant'?'align-left':'align-center';
-    return `<div class="meta ${side}">
-      ${ts?`<span>${esc(ts)}</span>`:''}
-      ${model?`<span class="chip">${esc(model)}</span>`:''}
-      <span>字数：${(text||'').length}</span>
-    </div>`;
-  };
-
-  const bubble = (role, text)=>{
-    return `<div class="msg ${roleClass(role)}">${esc(text||'')}</div>`;
-  };
-
-  let body = '';
-  c.messages.forEach(m=>{
-    const ts = m.ts ? new Date(m.ts*1000).toLocaleString() : '';
-    body += metaLine(m.role, ts, m.model||'', m.content||'');
-    body += bubble(m.role, m.content||'');
-
-    if(Array.isArray(m.branches) && m.branches.length){
-      body += `<details class="branch"><summary>回溯分支（共 ${m.branches.length} 条，点展开）</summary><div class="branch-inner">`;
-      m.branches.forEach((thread,i)=>{
-        body += `<div class="chip">分支 ${i+1}/${m.branches.length}</div>`;
-        thread.forEach(b=>{
-          const ts2 = b.ts ? new Date(b.ts*1000).toLocaleString() : '';
-          body += metaLine(b.role, ts2, b.model||'', b.content||'');
-          body += bubble(b.role, b.content||'');
-        });
-        body += `<div style="height:.6rem"></div>`;
-      });
-      body += `</div></details>`;
-    }
-    body += `<div style="height:.35rem;border-top:1px solid rgba(60,60,67,.12);margin:.55rem 0"></div>`;
-  });
-
-  const html = `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<title>${esc(c.title||'导出')}</title>
-<style>
-:root{${cssVars};--corner:18px}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg-light);color:var(--text-light)}
-.container{max-width:980px;margin:0 auto;padding:1rem .75rem 1.2rem .75rem;display:flex;flex-direction:column}
-.meta{font-size:.72rem;color:rgba(60,60,67,.60);display:flex;gap:.45rem;flex-wrap:wrap;margin:.05rem .18rem}
-.align-right{margin-left:auto;text-align:right}
-.align-left{margin-right:auto;text-align:left}
-.align-center{margin-left:auto;margin-right:auto;text-align:center}
-.chip{padding:.08rem .4rem;border-radius:999px;background:var(--chip-light);border:1px solid var(--sep-light)}
-.msg{max-width:var(--bubble-max);border-radius:var(--corner);padding:.55rem .72rem;line-height:1.55;white-space:pre-wrap;box-shadow:0 1px 0 rgba(0,0,0,.03)}
-.msg.user{background:var(--user);color:#fff;margin-left:auto}
-.msg.assistant{background:#fff;color:#111;margin-right:auto}
-.msg.system{background:rgba(175,82,222,.18);border:1px solid rgba(175,82,222,.22);margin-left:auto;margin-right:auto}
-details.branch{margin:.35rem 0;border:1px solid var(--sep-light);border-radius:12px;padding:.4rem .55rem;background:rgba(255,255,255,.7)}
-details.branch summary{cursor:pointer;font-weight:750}
-.branch-inner{margin-top:.35rem;display:flex;flex-direction:column;gap:.2rem}
-</style></head><body>
-<div class="container">
-  <h2 style="margin:.2rem 0 .6rem 0">${esc(c.title||'(无标题)')}</h2>
-  ${body}
-</div>
-</body></html>`;
-
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  downloadBlob(blob, `${safeName(c.title)}.html`);
-}
-
-/* Memories extraction already handled; this keeps meta updated */
-function updateAllMetaAfterImport(){
-  conversations.forEach(c=>{
-    c.totalChars = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
-  });
-  updateConvMeta();
-  updateMemMeta();
-}
-
-/* Render hooks */
-function renderCurrent(){
-  if(viewMode==='chats') renderChats();
-  else if(viewMode==='mems') renderMems();
-  else renderSettings();
-}
-
-/* Init apply prefs */
+/* ===== 初始化 ===== */
 (function init(){
   const isDark = !!prefs.dark;
   document.body.classList.toggle('dark', isDark);
-  document.getElementById('btnTheme').textContent = isDark ? '日间' : '夜间';
+  btnTheme.textContent = isDark ? '日间' : '夜间';
 
   if(prefs.colors?.user) setCSS('--user', prefs.colors.user);
   if(prefs.colors?.system) setCSS('--system', prefs.colors.system);
@@ -1567,32 +2231,43 @@ function renderCurrent(){
 
   const bw = prefs.bubble || 86;
   rngBubble.value = bw;
-  setBubbleWidth(bw);
+  setCSS('--bubble-max', `${bw}%`);
+  txtBubble.textContent = `${bw}%`;
 
   nmUser.value = prefs.names?.user || '';
   nmAsst.value = prefs.names?.assistant || '';
   nmSys.value  = prefs.names?.system || '';
 
+  setPanelTab('export');
   setMode('chats');
-  buildDrawerList();
 
   layoutTick();
   setTimeout(layoutTick, 120);
 })();
 
-/* Close panel when tapping outside (optional, iOS-friendly) */
-document.addEventListener('click', (e)=>{
-  const p = document.getElementById('panel');
-  if(!p.classList.contains('open')) return;
-  const insidePanel = e.target.closest('#panel') || e.target.closest('#btnPanel') || e.target.closest('#btnExportPanel');
-  if(!insidePanel){
-    p.classList.remove('open');
-    layoutTick();
-  }
-});
+/* panel tabs */
+function setPanelTab(tab){
+  panelTab = tab;
+  pillExport.classList.toggle('active', tab==='export');
+  pillSettings.classList.toggle('active', tab==='settings');
+  panelExport.style.display = tab==='export' ? 'block' : 'none';
+  panelSettings.style.display = tab==='settings' ? 'block' : 'none';
+}
 
-/* Ensure select works even before import */
-selConv.onchange = ()=>{};
+/* drawer close */
+document.getElementById('btnCloseDrawer').onclick = ()=> openDrawer(false);
+
+/* conv select change */
+selConv.onchange = ()=>{
+  currentConv = Number(selConv.value)||0;
+  updateConvMeta();
+  buildDrawerList();
+  renderCurrent();
+  main.scrollTop=0;
+};
+
+/* 导入按钮 */
+document.getElementById('btnImport').onclick = ()=> fileInput.click();
 </script>
 </body>
 </html>
