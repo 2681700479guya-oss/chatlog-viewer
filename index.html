@@ -3,16 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-<title>Chat Viewer</title>
+<title>聊天记录查看器</title>
 
 <style>
 :root{
-  --vh: 1vh;                 /* runtime */
-  --header-h: 50px;          /* runtime */
+  --vh: 1vh;                 /* JS fallback */
+  --header-h: 52px;          /* runtime */
   --footer-h: 62px;          /* runtime */
   --panel-h: 0px;            /* runtime */
 
-  /* iOS-like palette */
   --bg-light:#f2f2f7;
   --bg-dark:#000000;
   --card-light:#ffffff;
@@ -38,6 +37,7 @@
   --corner: 18px;
 }
 
+/* 基础 */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{
@@ -45,9 +45,11 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
   background:var(--bg-light);
   color:var(--text-light);
-  height: calc(var(--vh, 1vh) * 100);
-  overflow:hidden;                 /* only content scrolls */
+  overflow:hidden;
   overscroll-behavior:none;
+  /* 关键：优先用 100dvh 铺满；不支持时用 --vh fallback */
+  height: 100dvh;
+  height: calc(var(--vh, 1vh) * 100);
 }
 body.dark{
   background:var(--bg-dark);
@@ -56,48 +58,60 @@ body.dark{
 
 a{color:inherit}
 
-/* ===== Top Nav ===== */
+/* 顶栏（吃安全区） */
 header{
   position:fixed; left:0; right:0; top:0;
   z-index:80;
   backdrop-filter:saturate(180%) blur(12px);
   background:color-mix(in oklab, #fff 88%, transparent);
   border-bottom:1px solid var(--sep-light);
-  padding: .35rem .65rem;
-  display:flex; align-items:center; justify-content:space-between;
+
+  padding-top: calc(env(safe-area-inset-top) + .35rem);
+  padding-bottom:.35rem;
+  padding-left:.65rem;
+  padding-right:.65rem;
+
+  display:flex; align-items:flex-end; justify-content:space-between;
   gap:.6rem;
 }
 body.dark header{
   background:color-mix(in oklab, #1c1c1e 88%, transparent);
   border-bottom-color:var(--sep-dark);
 }
-.h-left{display:flex; align-items:center; gap:.5rem; min-width:0}
+.h-left{display:flex; align-items:center; gap:.55rem; min-width:0}
 .h-title{
   font-weight:650; font-size: .98rem;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   transition:opacity .2s, transform .2s;
 }
-.iconbtn{
-  border:none; background:transparent; color:inherit;
-  font-size:1.1rem; padding:.15rem .3rem; border-radius:10px;
-}
-.iconbtn:active{transform:scale(.98)}
-.h-right{display:flex; gap:.4rem; align-items:center}
-.pill{
+.btn{
   border:1px solid var(--sep-light);
   background:color-mix(in oklab, #fff 92%, transparent);
   color:inherit;
   border-radius:999px;
-  padding:.34rem .55rem;
+  padding:.34rem .60rem;
   font-size:.85rem;
   cursor:pointer;
 }
-body.dark .pill{
+body.dark .btn{
   border-color:var(--sep-dark);
   background:color-mix(in oklab, #2c2c2e 90%, transparent);
 }
+.btn:active{transform:scale(.98)}
+.btn-ghost{
+  border:none;
+  background:transparent;
+  color:inherit;
+  font-size:1rem;
+  padding:.15rem .25rem;
+  border-radius:10px;
+}
+.btn-ghost:active{transform:scale(.98)}
+.h-right{display:flex; gap:.45rem; align-items:center; flex-wrap:nowrap}
 
-/* ===== Optional Top Panel (settings quick) ===== */
+input[type="file"]{display:none}
+
+/* 顶部面板（导出/设置） */
 #panel{
   position:fixed; left:0; right:0;
   top:var(--header-h);
@@ -115,9 +129,9 @@ body.dark .panel-inner{
   border-bottom-color:var(--sep-dark);
   background:color-mix(in oklab, #1c1c1e 92%, transparent);
 }
-.row{display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.15rem 0}
+.row{display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.18rem 0}
 .badge{
-  font-size:.75rem; font-weight:600;
+  font-size:.75rem; font-weight:650;
   padding:.14rem .45rem; border-radius:999px;
   border:1px solid var(--sep-light);
   background:color-mix(in oklab, #fff 88%, transparent);
@@ -138,12 +152,11 @@ body.dark input[type="text"], body.dark select, body.dark input[type="range"]{
   border-color:var(--sep-dark);
   background:color-mix(in oklab, #2c2c2e 90%, transparent);
 }
-input[type="file"]{display:none}
 .colorbox{display:flex; gap:.45rem; align-items:center}
 .colorbox label{font-size:.78rem; opacity:.85}
 .colorbox input[type="color"]{width:30px;height:26px;border:none;background:transparent}
 
-/* ===== Layout ===== */
+/* 抽屉与遮罩 */
 #drawerBackdrop{
   position:fixed; inset:0;
   background:rgba(0,0,0,.25);
@@ -179,21 +192,7 @@ body.dark #drawer{
   display:flex; align-items:center; justify-content:space-between; gap:.6rem;
 }
 body.dark .drawer-head{border-bottom-color:var(--sep-dark)}
-.drawer-title{font-weight:700}
-.drawer-tabs{display:flex; gap:.35rem}
-.dtab{
-  padding:.22rem .55rem;
-  border-radius:999px;
-  border:1px solid var(--sep-light);
-  background:transparent;
-  font-size:.78rem;
-  cursor:pointer;
-}
-body.dark .dtab{border-color:var(--sep-dark)}
-.dtab.active{
-  background:color-mix(in oklab, var(--user) 12%, transparent);
-  border-color:color-mix(in oklab, var(--user) 32%, transparent);
-}
+.drawer-title{font-weight:750}
 .drawer-list{
   overflow:auto;
   -webkit-overflow-scrolling:touch;
@@ -218,7 +217,7 @@ body.dark .dtab{border-color:var(--sep-dark)}
 }
 body.dark .item .sub{color:var(--muted-dark)}
 
-/* ===== Content (only scroll area) ===== */
+/* 内容区：严格 top/bottom，不出现上下大白边；只滚动这里 */
 main{
   position:fixed;
   left:0; right:0;
@@ -239,15 +238,15 @@ main{
 }
 
 .section-title{
-  font-weight:800;
+  font-weight:850;
   margin:.25rem 0 .4rem 0;
   font-size:1.02rem;
 }
 
-.muted{color:var(--muted-light)}
+.muted{color:var(--muted-light); line-height:1.6}
 body.dark .muted{color:var(--muted-dark)}
 
-/* ===== Chat bubbles ===== */
+/* 气泡与信息 */
 .meta, .name{
   font-size:.72rem;
   color:var(--muted-light);
@@ -307,13 +306,12 @@ body.dark .msg.system{
   color:color-mix(in oklab, #fff 70%, var(--system) 30%);
 }
 
-/* ===== Branch pager (回溯翻页) ===== */
+/* 回溯分支：永远放在左侧（AI 那边） */
 .branch-wrap{
   max-width:var(--bubble-max);
   margin:.15rem 0 .35rem 0;
+  margin-right:auto; /* 强制靠左 */
 }
-.branch-wrap.right{margin-left:auto}
-.branch-wrap.left{margin-right:auto}
 .branch-bar{
   display:flex; align-items:center; justify-content:space-between;
   gap:.45rem;
@@ -324,7 +322,7 @@ body.dark .msg.system{
   user-select:none;
 }
 .branch-bar .mini{
-  font-size:.78rem; font-weight:700;
+  font-size:.78rem; font-weight:750;
 }
 .branch-bar .hint{
   font-size:.74rem; color:var(--muted-light);
@@ -358,35 +356,40 @@ body.dark .branch-view{
 .branch-view .msg.user{margin-left:auto}
 .branch-view .msg.assistant{margin-right:auto}
 
-/* ===== Memories list ===== */
+/* 记忆 */
 .mem-search{
   display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;
   margin:.25rem 0 .35rem 0;
 }
-.mem-card{
+.card{
   background:var(--card-light);
   border:1px solid var(--sep-light);
   border-radius:14px;
   padding:.65rem .7rem;
 }
-body.dark .mem-card{
+body.dark .card{
   background:var(--card-dark);
   border-color:var(--sep-dark);
 }
 .mem-line{white-space:pre-wrap; line-height:1.5}
 
-/* ===== Bottom Tab Bar ===== */
+/* 底部 Tab：纯文字，无表情；吃安全区 */
 footer{
   position:fixed; left:0; right:0; bottom:0;
-  height:var(--footer-h);
   z-index:85;
   backdrop-filter:saturate(180%) blur(12px);
   background:color-mix(in oklab, #fff 88%, transparent);
   border-top:1px solid var(--sep-light);
+
+  padding-bottom: calc(env(safe-area-inset-bottom) + .15rem);
+  padding-top: .25rem;
+  padding-left:.35rem;
+  padding-right:.35rem;
+
   display:flex;
   align-items:center;
   justify-content:space-around;
-  padding:.25rem .35rem;
+  gap:.25rem;
 }
 body.dark footer{
   background:color-mix(in oklab, #1c1c1e 88%, transparent);
@@ -394,16 +397,20 @@ body.dark footer{
 }
 .tab{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:.1rem;
+  gap:.12rem;
   font-size:.72rem;
   color:var(--muted-light);
-  min-width:70px;
-  padding:.2rem .2rem;
+  min-width:78px;
+  padding:.32rem .25rem;
   border-radius:12px;
   cursor:pointer;
 }
 body.dark .tab{color:var(--muted-dark)}
-.tab .ticon{font-size:1.15rem; line-height:1}
+.tab .ticon{
+  font-size:.92rem;
+  line-height:1;
+  opacity:.85;
+}
 .tab.active{
   color:color-mix(in oklab, var(--user) 65%, #111 35%);
   background:color-mix(in oklab, var(--user) 10%, transparent);
@@ -412,9 +419,10 @@ body.dark .tab.active{
   color:color-mix(in oklab, var(--user) 70%, #fff 30%);
 }
 
-/* ===== Toast/Error ===== */
+/* Toast */
 #toast{
-  position:fixed; left:0; right:0; bottom:calc(var(--footer-h) + 8px);
+  position:fixed; left:0; right:0;
+  bottom:calc(var(--footer-h) + 10px);
   z-index:95;
   display:none;
   justify-content:center;
@@ -423,7 +431,7 @@ body.dark .tab.active{
 #toast.show{display:flex}
 .toast-inner{
   max-width:92vw;
-  background:rgba(192,57,43,.95);
+  background:rgba(30,30,30,.92);
   color:#fff;
   padding:.5rem .75rem;
   border-radius:12px;
@@ -431,7 +439,7 @@ body.dark .tab.active{
   pointer-events:none;
 }
 
-/* Desktop-ish width: keep nice */
+/* 桌面宽屏：抽屉常驻 */
 @media (min-width:1100px){
   #drawer{transform:translateX(0)}
   #drawerBackdrop{display:none}
@@ -445,25 +453,35 @@ body.dark .tab.active{
 <body>
 <header id="header">
   <div class="h-left">
-    <button class="iconbtn" id="btnDrawer" aria-label="菜单">☰</button>
-    <div class="h-title" id="navTitle">Chat Viewer</div>
+    <button class="btn-ghost" id="btnDrawer" aria-label="菜单">≡</button>
+    <div class="h-title" id="navTitle">聊天记录查看器</div>
   </div>
   <div class="h-right">
     <input id="file" type="file" accept=".json" multiple />
-    <button class="pill" id="btnImport">导入</button>
-    <button class="pill" id="btnExport">导出当前</button>
-    <button class="pill" id="btnPanel">设置</button>
-    <button class="pill" id="btnTheme">夜间</button>
+    <button class="btn" id="btnImport">导入</button>
+    <button class="btn" id="btnExportPanel">导出</button>
+    <button class="btn" id="btnPanel">设置</button>
+    <button class="btn" id="btnTheme">夜间</button>
   </div>
 </header>
 
-<!-- Top Panel -->
+<!-- Panel: Settings + Export -->
 <div id="panel">
-  <div class="panel-inner">
+  <div class="panel-inner" id="panelInner">
     <div class="row">
       <span class="badge">会话</span>
       <select id="selConv"></select>
       <span class="badge" id="convMeta">未导入</span>
+    </div>
+
+    <div class="row">
+      <span class="badge">导出当前</span>
+      <select id="expFmt">
+        <option value="txt">TXT（清晰排版）</option>
+        <option value="json">JSON（结构化）</option>
+        <option value="html">HTML（带气泡样式）</option>
+      </select>
+      <button class="btn" id="btnDoExport">执行导出</button>
     </div>
 
     <div class="row">
@@ -478,15 +496,21 @@ body.dark .tab.active{
         <label>用户</label><input type="color" id="cUser" />
         <label>系统</label><input type="color" id="cSys" />
       </div>
-      <button class="pill" id="btnReset">恢复默认</button>
+      <button class="btn" id="btnReset">恢复默认</button>
     </div>
 
     <div class="row">
       <span class="badge">显示名</span>
       <input type="text" id="nmUser" placeholder="用户显示名" style="width:8.5rem">
       <input type="text" id="nmAsst" placeholder="助手显示名" style="width:8.5rem">
-      <input type="text" id="nmSys" placeholder="系统显示名" style="width:8.5rem">
-      <button class="pill" id="btnSaveNames">保存</button>
+      <input type="text" id="nmSys"  placeholder="系统显示名" style="width:8.5rem">
+      <button class="btn" id="btnSaveNames">保存</button>
+    </div>
+
+    <div class="row">
+      <span class="badge">记忆</span>
+      <button class="btn" id="btnRescanMem">从会话重新提取记忆</button>
+      <span class="badge" id="memMeta">0 条</span>
     </div>
   </div>
 </div>
@@ -494,12 +518,8 @@ body.dark .tab.active{
 <div id="drawerBackdrop"></div>
 <aside id="drawer">
   <div class="drawer-head">
-    <div class="drawer-title">列表</div>
-    <div class="drawer-tabs">
-      <button class="dtab active" id="dtChats">聊天</button>
-      <button class="dtab" id="dtMems">记忆</button>
-    </div>
-    <button class="pill" id="btnCloseDrawer">关闭</button>
+    <div class="drawer-title">会话列表</div>
+    <button class="btn" id="btnCloseDrawer">关闭</button>
   </div>
   <div class="drawer-list" id="drawerList"></div>
 </aside>
@@ -507,35 +527,43 @@ body.dark .tab.active{
 <main id="main">
   <div class="container" id="view">
     <div class="section-title">聊天</div>
-    <div class="muted">点右上角「导入」，选择 ChatGPT 官方导出的 <b>conversations.json</b>；如要看「我的记忆」，再同时选择 <b>memories.json</b>。</div>
-    <div class="muted">提示：可以一次选多个文件导入（iPhone 文件选择器支持多选）。</div>
+    <div class="muted">
+      使用方法：点右上角“导入”，选择 ChatGPT 官方导出的 conversations.json（可多选）。
+      导入后自动生成会话列表，并尝试从会话内容中提取“记忆”。
+    </div>
   </div>
 </main>
 
 <footer>
-  <div class="tab active" id="tabChats"><div class="ticon">💬</div><div>聊天</div></div>
-  <div class="tab" id="tabMems"><div class="ticon">🧠</div><div>记忆</div></div>
-  <div class="tab" id="tabSettings"><div class="ticon">⚙️</div><div>设置</div></div>
+  <div class="tab active" id="tabChats">
+    <div class="ticon">聊天</div><div>聊天</div>
+  </div>
+  <div class="tab" id="tabMems">
+    <div class="ticon">记忆</div><div>记忆</div>
+  </div>
+  <div class="tab" id="tabSettings">
+    <div class="ticon">设置</div><div>设置</div>
+  </div>
 </footer>
 
 <div id="toast"><div class="toast-inner" id="toastText"></div></div>
 
 <script>
-/* ========= Toast ========= */
-const toast = (msg)=>{
+/* Toast */
+function toast(msg){
   const t=document.getElementById('toast');
   document.getElementById('toastText').textContent=msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 5200);
-};
+  setTimeout(()=>t.classList.remove('show'), 4500);
+}
 
-/* ========= Stable VH (anti-jitter) ========= */
+/* Stable VH + bar heights */
 function setStableVH(){
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty('--vh', `${vh}px`);
 }
 function measureBars(){
-  const headerH = document.getElementById('header').offsetHeight || 50;
+  const headerH = document.getElementById('header').offsetHeight || 52;
   document.documentElement.style.setProperty('--header-h', headerH+'px');
 
   const footerH = document.querySelector('footer').offsetHeight || 62;
@@ -552,63 +580,112 @@ function layoutTick(){
 window.addEventListener('resize', layoutTick);
 window.addEventListener('orientationchange', ()=>setTimeout(layoutTick, 250));
 
-/* ========= Preferences ========= */
-const PREF_KEY = 'chatviewer_ios_full_v1';
+/* Preferences */
+const PREF_KEY = 'chatviewer_full_v2';
 const prefs = (()=>{ try{return JSON.parse(localStorage.getItem(PREF_KEY))||{};}catch{return{};} })();
-const savePrefs = ()=>{ try{localStorage.setItem(PREF_KEY, JSON.stringify(prefs));}catch{} };
-
+function savePrefs(){ try{localStorage.setItem(PREF_KEY, JSON.stringify(prefs));}catch{} }
 function setCSS(k,v){document.documentElement.style.setProperty(k,v);}
 
-/* ========= State ========= */
-let conversations = [];       // parsed conversations
+/* State */
+let conversations = [];  // {id,title,created,messages:[...], totalChars}
 let currentConv = 0;
-let memories = [];            // parsed memories
-let viewMode = 'chats';       // chats | mems | settings
-let drawerMode = 'chats';     // drawer list content
+let memories = [];       // {id,text,created,source}
+let viewMode = 'chats';  // chats | mems | settings
 
-/* ========= DOM ========= */
+/* DOM */
 const btnDrawer = document.getElementById('btnDrawer');
 const btnCloseDrawer = document.getElementById('btnCloseDrawer');
 const drawer = document.getElementById('drawer');
 const drawerBackdrop = document.getElementById('drawerBackdrop');
 const drawerList = document.getElementById('drawerList');
-const dtChats = document.getElementById('dtChats');
-const dtMems = document.getElementById('dtMems');
 
 const fileInput = document.getElementById('file');
 document.getElementById('btnImport').onclick = ()=> fileInput.click();
-document.getElementById('btnExport').onclick = ()=> exportCurrent();
-document.getElementById('btnPanel').onclick = ()=> togglePanel();
-document.getElementById('btnTheme').onclick = ()=> toggleTheme();
 
+const btnPanel = document.getElementById('btnPanel');
+const btnExportPanel = document.getElementById('btnExportPanel');
 const panel = document.getElementById('panel');
+btnPanel.onclick = ()=>togglePanel(true);
+btnExportPanel.onclick = ()=>togglePanel(true);
+
+function togglePanel(forceOpen){
+  if(forceOpen===true){
+    panel.classList.add('open');
+  }else{
+    panel.classList.toggle('open');
+  }
+  layoutTick();
+}
+
 const selConv = document.getElementById('selConv');
 const convMeta = document.getElementById('convMeta');
+const memMeta = document.getElementById('memMeta');
+
+const expFmt = document.getElementById('expFmt');
+document.getElementById('btnDoExport').onclick = ()=> exportCurrent(expFmt.value);
+
+document.getElementById('btnTheme').onclick = ()=> toggleTheme();
+const navTitle = document.getElementById('navTitle');
 
 const rngBubble = document.getElementById('rngBubble');
 const txtBubble = document.getElementById('txtBubble');
+rngBubble.oninput = (e)=> setBubbleWidth(e.target.value);
 
 const cUser = document.getElementById('cUser');
-const cSys = document.getElementById('cSys');
+const cSys  = document.getElementById('cSys');
+cUser.oninput = (e)=>{ setCSS('--user', e.target.value); prefs.colors=prefs.colors||{}; prefs.colors.user=e.target.value; savePrefs(); if(viewMode==='chats') renderChats(); };
+cSys.oninput  = (e)=>{ setCSS('--system', e.target.value); prefs.colors=prefs.colors||{}; prefs.colors.system=e.target.value; savePrefs(); if(viewMode==='chats') renderChats(); };
+
+document.getElementById('btnReset').onclick = ()=> resetTheme();
 
 const nmUser = document.getElementById('nmUser');
 const nmAsst = document.getElementById('nmAsst');
 const nmSys  = document.getElementById('nmSys');
-
-document.getElementById('btnReset').onclick = ()=> resetTheme();
 document.getElementById('btnSaveNames').onclick = ()=> saveNames();
+
+document.getElementById('btnRescanMem').onclick = ()=>{
+  memories = extractMemoriesFromConversations(conversations);
+  updateMemMeta();
+  if(viewMode==='mems') renderMems();
+  toast('已重新提取记忆');
+};
+
+const main = document.getElementById('main');
+const view = document.getElementById('view');
 
 const tabChats = document.getElementById('tabChats');
 const tabMems = document.getElementById('tabMems');
 const tabSettings = document.getElementById('tabSettings');
 
-const main = document.getElementById('main');
-const navTitle = document.getElementById('navTitle');
-const view = document.getElementById('view');
+tabChats.onclick = ()=> setMode('chats');
+tabMems.onclick = ()=> setMode('mems');
+tabSettings.onclick = ()=> setMode('settings');
 
-/* ========= Drawer ========= */
+function setActiveTab(which){
+  [tabChats,tabMems,tabSettings].forEach(t=>t.classList.remove('active'));
+  if(which==='chats') tabChats.classList.add('active');
+  if(which==='mems') tabMems.classList.add('active');
+  if(which==='settings') tabSettings.classList.add('active');
+}
+
+function setMode(mode){
+  viewMode = mode;
+  setActiveTab(mode);
+  if(mode==='chats'){
+    navTitle.textContent = conversations[currentConv]?.title || '聊天';
+    renderChats();
+  }else if(mode==='mems'){
+    navTitle.textContent = '记忆';
+    renderMems();
+  }else{
+    navTitle.textContent = '设置';
+    renderSettings();
+  }
+}
+
+/* Drawer */
 function openDrawer(on){
-  if(window.matchMedia('(min-width:1100px)').matches) return; // desktop: always open
+  if(window.matchMedia('(min-width:1100px)').matches) return;
   drawer.classList.toggle('open', on);
   drawerBackdrop.classList.toggle('show', on);
 }
@@ -616,101 +693,14 @@ btnDrawer.onclick = ()=> openDrawer(true);
 btnCloseDrawer.onclick = ()=> openDrawer(false);
 drawerBackdrop.onclick = ()=> openDrawer(false);
 
-dtChats.onclick = ()=>{
-  drawerMode='chats';
-  dtChats.classList.add('active'); dtMems.classList.remove('active');
-  buildDrawerList();
-};
-dtMems.onclick = ()=>{
-  drawerMode='mems';
-  dtMems.classList.add('active'); dtChats.classList.remove('active');
-  buildDrawerList();
-};
-
-function buildDrawerList(){
-  drawerList.innerHTML = '';
-  if(drawerMode==='chats'){
-    if(!conversations.length){
-      drawerList.innerHTML = `<div class="muted" style="padding:.6rem .65rem">还没有导入会话。</div>`;
-      return;
-    }
-    conversations.forEach((c,idx)=>{
-      const item=document.createElement('div');
-      item.className='item' + (idx===currentConv?' active':'');
-      const dateStr = c.created ? new Date(c.created*1000).toLocaleDateString() : '';
-      item.innerHTML = `<div>${escapeHTML(c.title || `(无标题) ${idx+1}`)}</div>
-                        <div class="sub">消息 ${c.messages.length}${dateStr?` · ${dateStr}`:''} · 字数 ${c.totalChars||0}</div>`;
-      item.onclick=()=>{
-        currentConv = idx;
-        selConv.value = String(idx);
-        updateConvMeta();
-        renderChats();
-        buildDrawerList();
-        openDrawer(false);
-        main.scrollTop = 0;
-      };
-      drawerList.appendChild(item);
-    });
-  }else{
-    // memories list
-    const head=document.createElement('div');
-    head.className='muted';
-    head.style.padding='.6rem .65rem .25rem .65rem';
-    head.innerHTML = memories.length ? `已导入记忆：<b>${memories.length}</b> 条` : `还没有导入 memories.json`;
-    drawerList.appendChild(head);
-
-    if(memories.length){
-      memories.slice(0,50).forEach((m,idx)=>{
-        const it=document.createElement('div');
-        it.className='item';
-        it.innerHTML = `<div>记忆 #${idx+1}</div><div class="sub">${escapeHTML((m.text||'').slice(0,60))}${(m.text||'').length>60?'…':''}</div>`;
-        it.onclick=()=>{
-          setMode('mems');
-          openDrawer(false);
-          // scroll to this memory card
-          setTimeout(()=>{
-            const el=document.querySelector(`[data-mem-idx="${idx}"]`);
-            if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-          },80);
-        };
-        drawerList.appendChild(it);
-      });
-    }
-  }
-}
-
-/* ========= Tabs ========= */
-function setActiveTab(which){
-  [tabChats,tabMems,tabSettings].forEach(t=>t.classList.remove('active'));
-  if(which==='chats') tabChats.classList.add('active');
-  if(which==='mems') tabMems.classList.add('active');
-  if(which==='settings') tabSettings.classList.add('active');
-}
-function setMode(mode){
-  viewMode = mode;
-  setActiveTab(mode);
-  if(mode==='chats'){ navTitle.textContent = conversations[currentConv]?.title || '聊天'; renderChats(); }
-  if(mode==='mems'){ navTitle.textContent = '我的记忆'; renderMems(); }
-  if(mode==='settings'){ navTitle.textContent = '设置'; renderSettings(); }
-}
-
-tabChats.onclick = ()=> setMode('chats');
-tabMems.onclick = ()=> setMode('mems');
-tabSettings.onclick = ()=> setMode('settings');
-
-/* ========= Panel ========= */
-function togglePanel(){
-  panel.classList.toggle('open');
-  layoutTick();
-}
+/* Title quiet on scroll */
 main.addEventListener('scroll', ()=>{
-  // make title quieter like iOS
   const y = main.scrollTop;
   if(y>30){ navTitle.style.opacity='0.62'; navTitle.style.transform='translateY(-1px)'; }
   else{ navTitle.style.opacity='1'; navTitle.style.transform='translateY(0)'; }
 }, {passive:true});
 
-/* ========= Theme / Settings ========= */
+/* Theme */
 function toggleTheme(){
   const isDark = !document.body.classList.contains('dark');
   document.body.classList.toggle('dark', isDark);
@@ -735,11 +725,6 @@ function setBubbleWidth(v){
   prefs.bubble = Number(v);
   savePrefs();
 }
-rngBubble.oninput = (e)=> setBubbleWidth(e.target.value);
-
-cUser.oninput = (e)=>{ setCSS('--user', e.target.value); prefs.colors=prefs.colors||{}; prefs.colors.user=e.target.value; savePrefs(); if(viewMode==='chats') renderChats(); };
-cSys.oninput  = (e)=>{ setCSS('--system', e.target.value); prefs.colors=prefs.colors||{}; prefs.colors.system=e.target.value; savePrefs(); if(viewMode==='chats') renderChats(); };
-
 function saveNames(){
   prefs.names = {
     user: nmUser.value.trim(),
@@ -759,56 +744,55 @@ function displayName(role){
   return '';
 }
 
-/* ========= Import ========= */
+/* Import */
 fileInput.addEventListener('change', async(e)=>{
   const files = [...(e.target.files||[])];
   if(!files.length) return;
 
   try{
-    const payloads = [];
+    let importedConvs = [];
+    let importedMems = [];
+
     for(const f of files){
       const text = await f.text();
       let json;
       try{ json = JSON.parse(text); }catch{ continue; }
-      payloads.push({name:(f.name||'').toLowerCase(), json});
-    }
-    if(!payloads.length){
-      toast('未识别到有效 JSON');
-      return;
-    }
-    // classify by filename first, fallback by structure
-    for(const p of payloads){
-      if(p.name.includes('memories')){
-        memories = parseMemories(p.json);
-      }else if(p.name.includes('conversation') || p.name.includes('conversations')){
-        conversations = parseConversations(p.json);
+      const name = (f.name||'').toLowerCase();
+
+      if(name.includes('memories')){
+        importedMems = parseMemories(json);
       }else{
-        // heuristic
-        const maybe = tryParseAsConversationPack(p.json);
-        if(maybe?.type==='conversations') conversations = maybe.data;
-        const maybeMem = tryParseAsMemories(p.json);
-        if(maybeMem?.type==='memories') memories = maybeMem.data;
+        // 通通按会话包尝试解析（你说的“通常只有一个 conversations.json”）
+        const convs = parseConversations(json);
+        if(convs.length) importedConvs = importedConvs.concat(convs);
       }
     }
 
-    // post process
-    if(conversations.length){
+    if(importedConvs.length){
+      conversations = importedConvs;
       conversations.forEach(c=>{
         c.totalChars = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
       });
       buildConvSelect();
+      buildDrawerList();
       currentConv = Math.min(currentConv, conversations.length-1);
       selConv.value = String(currentConv);
       updateConvMeta();
     }
 
-    buildDrawerList();
+    // 记忆：优先用 memories.json；否则从 conversations 自动提取
+    if(importedMems.length){
+      memories = importedMems;
+    }else{
+      memories = extractMemoriesFromConversations(conversations);
+    }
+    updateMemMeta();
 
-    // default view
     setMode('chats');
-    toast(`导入完成：会话 ${conversations.length} 个${memories.length?`｜记忆 ${memories.length} 条`:''}`);
+    toast(`导入完成：会话 ${conversations.length} 个｜记忆 ${memories.length} 条`);
 
-    main.scrollTop=0;
+    main.scrollTop = 0;
+    togglePanel(false);
   }catch(err){
     toast('导入失败：' + (err?.message||String(err)));
   }finally{
@@ -817,14 +801,66 @@ fileInput.addEventListener('change', async(e)=>{
   }
 });
 
-/* ========= Conversations parsing ========= */
-function tryParseAsConversationPack(json){
-  try{
-    const data = parseConversations(json);
-    if(data.length) return {type:'conversations', data};
-  }catch{}
-  return null;
+/* Build UI lists */
+function escapeHTML(s){
+  return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+function buildConvSelect(){
+  selConv.innerHTML='';
+  conversations.forEach((c,idx)=>{
+    const opt=document.createElement('option');
+    opt.value=String(idx);
+    opt.textContent = c.title || `(无标题) ${idx+1}`;
+    selConv.appendChild(opt);
+  });
+  selConv.onchange = ()=>{
+    currentConv = Number(selConv.value)||0;
+    updateConvMeta();
+    renderChats();
+    buildDrawerList();
+    main.scrollTop=0;
+  };
+}
+function buildDrawerList(){
+  drawerList.innerHTML='';
+  if(!conversations.length){
+    drawerList.innerHTML = `<div class="muted" style="padding:.6rem .65rem">还没有导入会话。</div>`;
+    return;
+  }
+  conversations.forEach((c,idx)=>{
+    const item=document.createElement('div');
+    item.className='item' + (idx===currentConv?' active':'');
+    const dateStr = c.created ? new Date(c.created*1000).toLocaleDateString() : '';
+    item.innerHTML = `<div>${escapeHTML(c.title || `(无标题) ${idx+1}`)}</div>
+                      <div class="sub">消息 ${c.messages.length}${dateStr?` · ${dateStr}`:''} · 字数 ${c.totalChars||0}</div>`;
+    item.onclick=()=>{
+      currentConv=idx;
+      selConv.value=String(idx);
+      updateConvMeta();
+      renderChats();
+      buildDrawerList();
+      openDrawer(false);
+      main.scrollTop=0;
+    };
+    drawerList.appendChild(item);
+  });
+}
+function updateConvMeta(){
+  if(!conversations.length){
+    convMeta.textContent='未导入';
+    return;
+  }
+  const c=conversations[currentConv];
+  const created = c.created ? new Date(c.created*1000).toLocaleString() : '—';
+  const total = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
+  c.totalChars = total;
+  convMeta.textContent = `创建：${created}｜消息：${c.messages.length}｜字数：${total}`;
+}
+function updateMemMeta(){
+  memMeta.textContent = `${memories.length} 条`;
+}
+
+/* Parsing conversations */
 function parseConversations(data){
   const out = [];
   if(Array.isArray(data)){
@@ -843,12 +879,10 @@ function parseConversation(obj){
   const title = obj.title || obj.gist || obj.name || '';
   const created = obj.create_time || obj.update_time || obj.created || 0;
 
-  // mapping export (official)
   const mapping = obj.mapping;
   const current = obj.current_node;
 
   if(mapping && current){
-    // build main path
     const pathIds=[];
     let nodeId=current;
     while(nodeId && mapping[nodeId]){
@@ -865,11 +899,11 @@ function parseConversation(obj){
       if(m) messages.push(m);
     });
 
-    // map nodeId -> index
+    // id -> index
     const idToIndex=new Map();
     messages.forEach((m,i)=>idToIndex.set(m._nodeId,i));
 
-    // collect branch threads: each sibling child not on path becomes a separate thread (linear-ish)
+    // 分支：收集为 threads
     pathIds.forEach(pid=>{
       const node=mapping[pid];
       const children=Array.isArray(node.children)?node.children:[];
@@ -878,12 +912,35 @@ function parseConversation(obj){
 
       const threads=[];
       for(const kid of branchKids){
-        const thread = collectBranchThread(mapping, kid, 120);
+        const thread = collectBranchThread(mapping, kid, 140);
         if(thread.length) threads.push(thread);
       }
+      if(!threads.length) return;
+
       const at=idToIndex.get(pid);
-      if(typeof at==='number' && threads.length){
-        messages[at].branches = threads;
+      if(typeof at!=='number') return;
+
+      // 关键改动：把分支显示归到“AI 回复下面”
+      // 如果当前节点是 user，则分支通常是 assistant 的不同回复；将其挂到 next assistant（主线紧随其后的消息）上
+      // 如果当前节点是 assistant，则直接挂到自己下面
+      const curMsg = messages[at];
+      if(curMsg.role === 'user'){
+        const nextIdx = at + 1;
+        if(messages[nextIdx] && messages[nextIdx].role === 'assistant'){
+          messages[nextIdx].branches = (messages[nextIdx].branches||[]).concat(threads);
+        }else{
+          // 找后续第一个 assistant
+          let j = at+1;
+          while(j < messages.length && messages[j].role !== 'assistant') j++;
+          if(j < messages.length){
+            messages[j].branches = (messages[j].branches||[]).concat(threads);
+          }else{
+            // 实在找不到，就挂自己（但 UI 仍会强制放左侧）
+            curMsg.branches = (curMsg.branches||[]).concat(threads);
+          }
+        }
+      }else{
+        curMsg.branches = (curMsg.branches||[]).concat(threads);
       }
     });
 
@@ -891,7 +948,6 @@ function parseConversation(obj){
     return {id:obj.id||crypto.randomUUID(), title, created, messages:cleaned, totalChars:0};
   }
 
-  // fallback: linear messages array
   if(Array.isArray(obj.messages)){
     const msgs=obj.messages.map(normalizeLinearMessage).filter(Boolean);
     return {id:obj.id||crypto.randomUUID(), title, created, messages:msgs, totalChars:0};
@@ -905,7 +961,7 @@ function normalizeLinearMessage(m){
   const content=typeof parts==='string'?parts:JSON.stringify(parts);
   const model=m.model||m.metadata?.model_slug||m.metadata?.model||"";
   const ts=m.create_time||m.ts||0;
-  return {role,content,model,ts,branches:[]};
+  return {role,content,model,ts,branches:[],meta:m.metadata||{}};
 }
 
 function normalizeNodeMessage(node){
@@ -922,12 +978,10 @@ function normalizeNodeMessage(node){
   const model=msg.metadata?.model_slug||msg.metadata?.model||msg.model_slug||msg.model||"";
   const ts=msg.create_time||node.create_time||0;
 
-  return {role,content:text||"",model,ts,branches:[],_nodeId:node.id};
+  return {role,content:text||"",model,ts,branches:[],_nodeId:node.id,meta:msg.metadata||{}};
 }
 
-// A "thread" = linear walk from startId following the most likely continuation.
-// If a node has multiple children, we stop (because it becomes another branch).
-function collectBranchThread(mapping, startId, limit=120){
+function collectBranchThread(mapping, startId, limit=140){
   const thread=[];
   let id=startId;
   let safety=0;
@@ -936,7 +990,7 @@ function collectBranchThread(mapping, startId, limit=120){
     const node=mapping[id];
     const m=normalizeNodeMessage(node);
     if(m && m.content && m.content.trim().length){
-      thread.push({role:m.role, content:m.content, ts:m.ts, model:m.model});
+      thread.push({role:m.role, content:m.content, ts:m.ts, model:m.model, meta:m.meta||{}});
     }
     const kids = Array.isArray(node.children)?node.children:[];
     if(kids.length!==1) break;
@@ -945,18 +999,7 @@ function collectBranchThread(mapping, startId, limit=120){
   return thread;
 }
 
-/* ========= Memories parsing =========
-   ChatGPT export "memories.json" formats may vary; we support common shapes:
-   - Array of {id, memory, text, ...}
-   - Object with items: [...]
-*/
-function tryParseAsMemories(json){
-  try{
-    const data = parseMemories(json);
-    if(data.length) return {type:'memories', data};
-  }catch{}
-  return null;
-}
+/* Memories parsing (memories.json if exists) */
 function parseMemories(data){
   let arr=[];
   if(Array.isArray(data)) arr=data;
@@ -965,65 +1008,114 @@ function parseMemories(data){
     else if(Array.isArray(data.memories)) arr=data.memories;
     else if(Array.isArray(data.data)) arr=data.data;
   }
-
   const out=[];
   for(const it of arr){
     if(typeof it === 'string'){
-      out.push({text:it, created:0, source:'string'});
+      out.push({id:crypto.randomUUID(), text:it, created:0, source:'memories.json'});
       continue;
     }
     if(!it || typeof it!=='object') continue;
-
-    const text =
-      it.memory || it.text || it.content || it.value || it.title || it.summary || '';
-
+    const text = it.memory || it.text || it.content || it.value || it.title || it.summary || '';
     if(!text) continue;
-
     out.push({
       id: it.id || it.memory_id || it.key || crypto.randomUUID(),
       text: String(text),
       created: it.created_at || it.create_time || it.timestamp || 0,
-      raw: it
+      source:'memories.json'
     });
   }
   return out;
 }
 
-/* ========= UI building ========= */
-function escapeHTML(s){
-  return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-function buildConvSelect(){
-  selConv.innerHTML='';
-  conversations.forEach((c,idx)=>{
-    const opt=document.createElement('option');
-    opt.value=String(idx);
-    opt.textContent = c.title || `(无标题) ${idx+1}`;
-    selConv.appendChild(opt);
-  });
-  selConv.onchange = ()=>{
-    currentConv = Number(selConv.value)||0;
-    updateConvMeta();
-    renderChats();
-    buildDrawerList();
-    main.scrollTop=0;
+/* 关键：从 conversations 自动提取记忆 */
+function extractMemoriesFromConversations(convs){
+  const found = new Map(); // text -> item
+  const add = (text, created, source)=>{
+    const t=(text||'').trim();
+    if(!t) return;
+    if(found.has(t)) return;
+    found.set(t, {id:crypto.randomUUID(), text:t, created:created||0, source:source||'conversations'});
   };
-}
 
-function updateConvMeta(){
-  if(!conversations.length){
-    convMeta.textContent='未导入';
-    return;
+  // 1) metadata 里可能有记忆字段（不同导出格式差异很大，做多路兼容）
+  const metaPick = (meta)=>{
+    if(!meta || typeof meta!=='object') return;
+    // 常见可能：meta.memory / meta.memories / meta.user_memory / meta.saved_memory 等
+    const candidates = [
+      meta.memory, meta.memories, meta.user_memory, meta.saved_memory, meta.saved_memories,
+      meta.personalization, meta.profile, meta.user_profile, meta.bio
+    ];
+    for(const c of candidates){
+      if(!c) continue;
+      if(typeof c === 'string') add(c, 0, 'metadata');
+      else if(Array.isArray(c)) c.forEach(x=> typeof x==='string' ? add(x,0,'metadata') : null);
+      else if(typeof c === 'object'){
+        // 若是对象，尝试抽取可能的文本字段
+        const ks = ['text','content','value','memory','summary','description','title'];
+        ks.forEach(k=>{
+          if(typeof c[k]==='string') add(c[k],0,'metadata');
+        });
+      }
+    }
+  };
+
+  // 2) 内容关键词识别（中英文）
+  const keywordHit = (s)=>{
+    const t = (s||'').toLowerCase();
+    return (
+      t.includes('memory updated') ||
+      t.includes('saved to memory') ||
+      t.includes('remembered') ||
+      t.includes('已更新记忆') ||
+      t.includes('已保存到记忆') ||
+      t.includes('记忆已更新') ||
+      t.includes('写入记忆') ||
+      t.includes('加入记忆') ||
+      t.includes('更新记忆')
+    );
+  };
+
+  // 3) 抽取模式：如果文本像“记忆：xxx”就抓 xxx
+  const extractFromText = (s)=>{
+    const str = (s||'').trim();
+    if(!str) return [];
+    const out=[];
+
+    // 中文：记忆：xxx / 已更新记忆：xxx / 写入记忆：xxx
+    const m1 = str.match(/(?:已更新记忆|记忆已更新|写入记忆|加入记忆|已保存到记忆|更新记忆)\s*[:：]\s*(.+)$/);
+    if(m1 && m1[1]) out.push(m1[1].trim());
+
+    const m2 = str.match(/^记忆\s*[:：]\s*(.+)$/);
+    if(m2 && m2[1]) out.push(m2[1].trim());
+
+    // 英文：Memory updated: xxx / Saved to memory: xxx
+    const m3 = str.match(/(?:memory updated|saved to memory)\s*:\s*(.+)$/i);
+    if(m3 && m3[1]) out.push(m3[1].trim());
+
+    return out;
+  };
+
+  for(const c of (convs||[])){
+    for(const m of (c.messages||[])){
+      // metadata
+      metaPick(m.meta);
+
+      // content keyword
+      if(keywordHit(m.content)){
+        const xs = extractFromText(m.content);
+        if(xs.length) xs.forEach(x=>add(x, m.ts||0, 'content'));
+        else add(m.content, m.ts||0, 'content');
+      }else{
+        // 也可能是 system 里直接给出“记忆：xxx”
+        const xs = extractFromText(m.content);
+        if(xs.length) xs.forEach(x=>add(x, m.ts||0, 'content'));
+      }
+    }
   }
-  const c=conversations[currentConv];
-  const created = c.created ? new Date(c.created*1000).toLocaleString() : '—';
-  const total = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
-  c.totalChars = total;
-  convMeta.textContent = `创建：${created}｜消息：${c.messages.length}｜字数：${total}`;
+  return [...found.values()];
 }
 
-/* ========= Render: Chats ========= */
+/* Render */
 function roleClass(role){
   if(role==='user') return 'user';
   if(role==='system') return 'system';
@@ -1038,14 +1130,14 @@ function renderChats(){
   view.appendChild(title);
 
   if(!conversations.length){
-    view.innerHTML += `<div class="muted">还没有导入会话。点右上角「导入」选择 conversations.json。</div>`;
+    view.innerHTML += `<div class="muted">还没有导入会话。点右上角“导入”选择 conversations.json。</div>`;
     return;
   }
 
   const c = conversations[currentConv];
   navTitle.textContent = c.title || '聊天';
 
-  c.messages.forEach((m, msgIndex)=>{
+  c.messages.forEach((m)=>{
     const name=displayName(m.role);
     if(name){
       const nm=document.createElement('div');
@@ -1069,17 +1161,17 @@ function renderChats(){
     bubble.innerText = m.content || '';
     view.appendChild(bubble);
 
-    // Branch pager: show only if branches exist
+    // 分支翻页条（永远放在左侧显示）
     if(Array.isArray(m.branches) && m.branches.length){
       const wrap=document.createElement('div');
-      wrap.className='branch-wrap ' + (m.role==='user'?'right':'left');
+      wrap.className='branch-wrap';
 
       const bar=document.createElement('div');
       bar.className='branch-bar';
 
       const leftBtn=document.createElement('button');
       leftBtn.className='bbtn';
-      leftBtn.textContent='‹';
+      leftBtn.textContent='<';
 
       const mid=document.createElement('div');
       mid.style.display='flex';
@@ -1088,17 +1180,18 @@ function renderChats(){
 
       const mini=document.createElement('div');
       mini.className='mini';
-      // default: show "＜1/N＞" but do NOT open content yet
       mini.textContent = `＜1/${m.branches.length}＞`;
+
       const hint=document.createElement('div');
       hint.className='hint';
-      hint.textContent='回溯分支（点“展开”查看）';
+      hint.textContent='回溯分支（点展开查看）';
+
       mid.appendChild(mini);
       mid.appendChild(hint);
 
       const rightBtn=document.createElement('button');
       rightBtn.className='bbtn';
-      rightBtn.textContent='›';
+      rightBtn.textContent='>';
 
       const toggleBtn=document.createElement('button');
       toggleBtn.className='bbtn';
@@ -1123,7 +1216,6 @@ function renderChats(){
           viewBox.innerHTML = `<div class="muted">（该分支暂无可显示内容）</div>`;
           return;
         }
-        // Render thread messages (compact)
         thread.forEach(b=>{
           const meta2=document.createElement('div');
           meta2.className='meta ' + (b.role==='user'?'align-right':b.role==='assistant'?'align-left':'align-center');
@@ -1143,18 +1235,20 @@ function renderChats(){
 
       leftBtn.onclick=()=>{
         page = (page - 1 + m.branches.length) % m.branches.length;
-        renderBranchPage();
+        if(viewBox.style.display !== 'none') renderBranchPage();
+        mini.textContent = `＜${page+1}/${m.branches.length}＞`;
       };
       rightBtn.onclick=()=>{
         page = (page + 1) % m.branches.length;
-        renderBranchPage();
+        if(viewBox.style.display !== 'none') renderBranchPage();
+        mini.textContent = `＜${page+1}/${m.branches.length}＞`;
       };
       toggleBtn.onclick=()=>{
         const open = viewBox.style.display !== 'none';
         if(open){
           viewBox.style.display='none';
           toggleBtn.textContent='展开';
-          hint.textContent='回溯分支（点“展开”查看）';
+          hint.textContent='回溯分支（点展开查看）';
         }else{
           renderBranchPage();
           viewBox.style.display='block';
@@ -1172,19 +1266,18 @@ function renderChats(){
   updateConvMeta();
 }
 
-/* ========= Render: Memories ========= */
 function renderMems(){
   view.innerHTML='';
   const title=document.createElement('div');
   title.className='section-title';
-  title.textContent='我的记忆';
+  title.textContent='记忆';
   view.appendChild(title);
 
   const info=document.createElement('div');
   info.className='muted';
   info.innerHTML = memories.length
-    ? `已导入 <b>${memories.length}</b> 条记忆。`
-    : `还没有导入 <b>memories.json</b>。你可以在「导入」时多选 conversations.json + memories.json 一起导入。`;
+    ? `已提取 <b>${memories.length}</b> 条记忆。`
+    : `未提取到记忆。你可以去“设置”里点“从会话重新提取记忆”，或确认导入的确是完整 conversations.json。`;
   view.appendChild(info);
 
   const searchWrap=document.createElement('div');
@@ -1192,7 +1285,7 @@ function renderMems(){
   searchWrap.innerHTML = `
     <span class="badge">搜索</span>
     <input type="text" id="memQ" placeholder="输入关键字…" style="width:14rem">
-    <button class="pill" id="memClear">清空</button>
+    <button class="btn" id="memClear">清空</button>
   `;
   view.appendChild(searchWrap);
 
@@ -1221,7 +1314,7 @@ function renderMems(){
 
     arr.forEach((m,idx)=>{
       const card=document.createElement('div');
-      card.className='mem-card';
+      card.className='card';
       card.dataset.memIdx = String(idx);
 
       const top=document.createElement('div');
@@ -1229,9 +1322,10 @@ function renderMems(){
       const ts = (m.created && typeof m.created==='number' && m.created>1000000000)
         ? new Date(m.created*1000).toLocaleString()
         : '';
-      top.innerHTML = `<span class="chip">记忆</span>${ts?`<span>${escapeHTML(ts)}</span>`:''}
-                      <span>字数：${(m.text||'').length}</span>
-                      <button class="pill" style="padding:.22rem .55rem" data-copy="1">复制</button>`;
+      top.innerHTML = `<span class="chip">来源：${escapeHTML(m.source||'会话')}</span>
+                       ${ts?`<span>${escapeHTML(ts)}</span>`:''}
+                       <span>字数：${(m.text||'').length}</span>
+                       <button class="btn" style="padding:.22rem .55rem" data-copy="1">复制</button>`;
       card.appendChild(top);
 
       const line=document.createElement('div');
@@ -1244,7 +1338,7 @@ function renderMems(){
           await navigator.clipboard.writeText(m.text||'');
           toast('已复制');
         }catch{
-          toast('复制失败（可能被浏览器限制）');
+          toast('复制失败（浏览器限制）');
         }
       };
 
@@ -1254,12 +1348,9 @@ function renderMems(){
 
   qInput.oninput = ()=> draw(qInput.value);
   clearBtn.onclick = ()=>{ qInput.value=''; draw(''); };
-
-  // restore last query optional
   draw('');
 }
 
-/* ========= Render: Settings ========= */
 function renderSettings(){
   view.innerHTML='';
   const title=document.createElement('div');
@@ -1268,42 +1359,119 @@ function renderSettings(){
   view.appendChild(title);
 
   const card=document.createElement('div');
-  card.className='mem-card';
+  card.className='card';
   card.innerHTML = `
-    <div class="muted" style="line-height:1.6">
-      <div><b>提示</b></div>
-      <div>• 为了 iPhone 上不乱晃：页面只滚动中间内容区，顶部/底部固定。</div>
-      <div>• 想看「我的记忆」：导入 ChatGPT 官方导出的 <b>memories.json</b>（如果你的导出包里有）。</div>
-      <div>• 回溯分支：在对应消息下方出现翻页条 <b>＜1/N＞</b>，点“展开”查看，左右按钮切换。</div>
-      <div style="margin-top:.45rem"><b>当前数据</b></div>
-      <div>会话：${conversations.length} 个｜记忆：${memories.length} 条</div>
+    <div class="muted">
+      <div><b>说明</b></div>
+      <div>1) 页面已做 iPhone Safari 铺满适配：顶部/底部吃安全区，内容区固定滚动。</div>
+      <div>2) 回溯分支在 AI（左侧）回复下方显示翻页条：＜1/x＞，默认收起。</div>
+      <div>3) 记忆默认从 conversations.json 自动提取；也可点面板里的“从会话重新提取记忆”。</div>
+      <div style="margin-top:.6rem"><b>当前数据</b></div>
+      <div>会话：${conversations.length} 个</div>
+      <div>记忆：${memories.length} 条</div>
     </div>
   `;
   view.appendChild(card);
 }
 
-/* ========= Export ========= */
-function exportCurrent(){
+/* Export formats */
+function exportCurrent(fmt){
   if(!conversations.length){
     toast('没有可导出的会话');
     return;
   }
   const c = conversations[currentConv];
 
+  if(fmt==='txt') return exportTXT(c);
+  if(fmt==='json') return exportJSON(c);
+  return exportHTML(c);
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  setTimeout(()=>{
+    a.click();
+    URL.revokeObjectURL(url);
+  },0);
+}
+
+function safeName(name){
+  return (name||'chat_export').replace(/[\\/:*?"<>|]/g,'_').trim() || 'chat_export';
+}
+
+function exportTXT(c){
+  const lines=[];
+  lines.push(`# ${c.title || '(无标题)'}\n`);
+  lines.push(`创建：${c.created?new Date(c.created*1000).toLocaleString():'—'}\n`);
+  lines.push(`消息数：${c.messages.length}  字数：${c.totalChars||0}\n`);
+  lines.push(`\n----------------------------------------\n`);
+
+  const roleLabel = (r)=>{
+    const n=prefs.names||{};
+    if(r==='user') return n.user || 'User';
+    if(r==='assistant') return n.assistant || 'Assistant';
+    if(r==='system') return n.system || 'System';
+    return r;
+  };
+
+  c.messages.forEach((m,idx)=>{
+    const ts = m.ts?new Date(m.ts*1000).toLocaleString():'';
+    const model = m.model?`[${m.model}]`:'';
+    lines.push(`(${idx+1}) ${roleLabel(m.role)} ${model} ${ts}`.trim());
+    lines.push(m.content||'');
+    lines.push('');
+
+    if(Array.isArray(m.branches) && m.branches.length){
+      lines.push(`  [回溯分支 ${m.branches.length} 条]`);
+      m.branches.forEach((thread,i)=>{
+        lines.push(`  - 分支 ${i+1}/${m.branches.length}`);
+        thread.forEach(b=>{
+          const ts2=b.ts?new Date(b.ts*1000).toLocaleString():'';
+          const model2=b.model?`[${b.model}]`:'';
+          lines.push(`    ${roleLabel(b.role)} ${model2} ${ts2}`.trim());
+          lines.push(`    ${String(b.content||'').replace(/\n/g,"\n    ")}`);
+        });
+        lines.push('');
+      });
+      lines.push(`----------------------------------------\n`);
+    }else{
+      lines.push(`----------------------------------------\n`);
+    }
+  });
+
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  downloadBlob(blob, `${safeName(c.title)}.txt`);
+}
+
+function exportJSON(c){
+  const payload = {
+    title: c.title || '',
+    created: c.created || 0,
+    messages: c.messages.map(m=>({
+      role: m.role,
+      ts: m.ts||0,
+      model: m.model||'',
+      content: m.content||'',
+      branches: (m.branches||[]).map(thread=>thread.map(b=>({
+        role:b.role, ts:b.ts||0, model:b.model||'', content:b.content||''
+      })))
+    }))
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
+  downloadBlob(blob, `${safeName(c.title)}.json`);
+}
+
+function exportHTML(c){
   const rootStyle = getComputedStyle(document.documentElement);
   const cssVars = [
     '--user','--system','--bubble-max','--bg-light','--text-light','--sep-light','--chip-light'
   ].map(v=>`${v}:${rootStyle.getPropertyValue(v).trim()}`).join(';');
 
   const esc = s => (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
-
-  const nameOf = (role)=>{
-    const n=prefs.names||{};
-    if(role==='user') return n.user||'';
-    if(role==='assistant') return n.assistant||'';
-    if(role==='system') return n.system||'';
-    return '';
-  };
+  const roleClass = (r)=> r==='user'?'user':(r==='system'?'system':'assistant');
 
   const metaLine = (role, ts, model, text)=>{
     const side = role==='user'?'align-right':role==='assistant'?'align-left':'align-center';
@@ -1315,45 +1483,39 @@ function exportCurrent(){
   };
 
   const bubble = (role, text)=>{
-    const cls = role==='user'?'user':role==='system'?'system':'assistant';
-    return `<div class="msg ${cls}">${esc(text||'')}</div>`;
+    return `<div class="msg ${roleClass(role)}">${esc(text||'')}</div>`;
   };
 
   let body = '';
   c.messages.forEach(m=>{
-    const nm = nameOf(m.role);
-    if(nm){
-      const side = m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center';
-      body += `<div class="name ${side}">${esc(nm)}</div>`;
-    }
     const ts = m.ts ? new Date(m.ts*1000).toLocaleString() : '';
     body += metaLine(m.role, ts, m.model||'', m.content||'');
     body += bubble(m.role, m.content||'');
 
-    // export branch pager content as collapsed details for readability in exported file
     if(Array.isArray(m.branches) && m.branches.length){
-      body += `<details class="branch"><summary>回溯分支（共 ${m.branches.length} 条路径，点展开）</summary><div class="branch-inner">`;
+      body += `<details class="branch"><summary>回溯分支（共 ${m.branches.length} 条，点展开）</summary><div class="branch-inner">`;
       m.branches.forEach((thread,i)=>{
-        body += `<div class="branch-path"><div class="chip">分支 ${i+1}/${m.branches.length}</div></div>`;
+        body += `<div class="chip">分支 ${i+1}/${m.branches.length}</div>`;
         thread.forEach(b=>{
           const ts2 = b.ts ? new Date(b.ts*1000).toLocaleString() : '';
           body += metaLine(b.role, ts2, b.model||'', b.content||'');
           body += bubble(b.role, b.content||'');
         });
+        body += `<div style="height:.6rem"></div>`;
       });
       body += `</div></details>`;
     }
+    body += `<div style="height:.35rem;border-top:1px solid rgba(60,60,67,.12);margin:.55rem 0"></div>`;
   });
 
   const html = `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>${esc(c.title||'导出')}</title>
 <style>
 :root{${cssVars};--corner:18px}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg-light);color:var(--text-light)}
-.container{max-width:980px;margin:0 auto;padding:1rem .75rem 1.2rem .75rem;display:flex;flex-direction:column;gap:.62rem}
-.name,.meta{font-size:.72rem;color:rgba(60,60,67,.60)}
-.meta{display:flex;gap:.45rem;flex-wrap:wrap;margin:.05rem .18rem}
+.container{max-width:980px;margin:0 auto;padding:1rem .75rem 1.2rem .75rem;display:flex;flex-direction:column}
+.meta{font-size:.72rem;color:rgba(60,60,67,.60);display:flex;gap:.45rem;flex-wrap:wrap;margin:.05rem .18rem}
 .align-right{margin-left:auto;text-align:right}
 .align-left{margin-right:auto;text-align:left}
 .align-center{margin-left:auto;margin-right:auto;text-align:center}
@@ -1363,9 +1525,8 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Aria
 .msg.assistant{background:#fff;color:#111;margin-right:auto}
 .msg.system{background:rgba(175,82,222,.18);border:1px solid rgba(175,82,222,.22);margin-left:auto;margin-right:auto}
 details.branch{margin:.35rem 0;border:1px solid var(--sep-light);border-radius:12px;padding:.4rem .55rem;background:rgba(255,255,255,.7)}
-details.branch summary{cursor:pointer;font-weight:700}
-.branch-inner{margin-top:.35rem;display:flex;flex-direction:column;gap:.55rem}
-.branch-path{margin:.25rem 0}
+details.branch summary{cursor:pointer;font-weight:750}
+.branch-inner{margin-top:.35rem;display:flex;flex-direction:column;gap:.2rem}
 </style></head><body>
 <div class="container">
   <h2 style="margin:.2rem 0 .6rem 0">${esc(c.title||'(无标题)')}</h2>
@@ -1373,88 +1534,65 @@ details.branch summary{cursor:pointer;font-weight:700}
 </div>
 </body></html>`;
 
-  try{
-    const blob = new Blob([html], {type:'text/html'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(c.title||'chat_export').replace(/[\\/:*?"<>|]/g,'_')}.html`;
-    setTimeout(()=>{
-      a.click();
-      URL.revokeObjectURL(url);
-    },0);
-  }catch(err){
-    toast('导出失败：'+(err?.message||String(err)));
-  }
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  downloadBlob(blob, `${safeName(c.title)}.html`);
 }
 
-/* ========= Apply prefs on load ========= */
+/* Memories extraction already handled; this keeps meta updated */
+function updateAllMetaAfterImport(){
+  conversations.forEach(c=>{
+    c.totalChars = c.messages.reduce((acc,m)=>acc+(m.content?m.content.length:0),0);
+  });
+  updateConvMeta();
+  updateMemMeta();
+}
+
+/* Render hooks */
+function renderCurrent(){
+  if(viewMode==='chats') renderChats();
+  else if(viewMode==='mems') renderMems();
+  else renderSettings();
+}
+
+/* Init apply prefs */
 (function init(){
-  // theme
   const isDark = !!prefs.dark;
   document.body.classList.toggle('dark', isDark);
   document.getElementById('btnTheme').textContent = isDark ? '日间' : '夜间';
 
-  // colors
   if(prefs.colors?.user) setCSS('--user', prefs.colors.user);
   if(prefs.colors?.system) setCSS('--system', prefs.colors.system);
   cUser.value = prefs.colors?.user || '#0a84ff';
   cSys.value  = prefs.colors?.system || '#af52de';
 
-  // bubble
   const bw = prefs.bubble || 86;
   rngBubble.value = bw;
   setBubbleWidth(bw);
 
-  // names
   nmUser.value = prefs.names?.user || '';
   nmAsst.value = prefs.names?.assistant || '';
   nmSys.value  = prefs.names?.system || '';
 
-  // panel state
-  if(prefs.panelOpen){
-    panel.classList.add('open');
-  }
-
-  // title
-  if(prefs.pageTitle){
-    document.title = prefs.pageTitle;
-    navTitle.textContent = prefs.pageTitle;
-  }else{
-    navTitle.textContent = document.title || 'Chat Viewer';
-  }
-
-  // initial mode
   setMode('chats');
-
-  // drawer list
   buildDrawerList();
 
-  // layout
   layoutTick();
   setTimeout(layoutTick, 120);
 })();
 
-/* ========= Title click to rename (small convenience) ========= */
-navTitle.addEventListener('click', ()=>{
-  const cur = document.title || 'Chat Viewer';
-  const next = prompt('修改页面标题（标签栏显示）', cur);
-  if(next && next.trim()){
-    document.title = next.trim();
-    navTitle.textContent = next.trim();
-    prefs.pageTitle = next.trim();
-    savePrefs();
-    toast('已修改标题');
+/* Close panel when tapping outside (optional, iOS-friendly) */
+document.addEventListener('click', (e)=>{
+  const p = document.getElementById('panel');
+  if(!p.classList.contains('open')) return;
+  const insidePanel = e.target.closest('#panel') || e.target.closest('#btnPanel') || e.target.closest('#btnExportPanel');
+  if(!insidePanel){
+    p.classList.remove('open');
+    layoutTick();
   }
 });
 
-/* ========= Panel height tracking ========= */
-const panelObserver = new MutationObserver(()=>layoutTick());
-panelObserver.observe(panel, {attributes:true, attributeFilter:['class']});
-
-/* ========= Keep drawer buttons consistent ========= */
-drawerMode='chats';
-buildDrawerList();
+/* Ensure select works even before import */
+selConv.onchange = ()=>{};
 </script>
 </body>
 </html>
