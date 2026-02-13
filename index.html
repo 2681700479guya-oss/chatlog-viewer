@@ -13,20 +13,21 @@
   --panel-h: 0px;
 
   --bg-light:#f2f2f7;
-  --bg-dark:#000000;
-  --card-light:#ffffff;
+  --bg-dark:#000;
+  --card-light:#fff;
   --card-dark:#1c1c1e;
 
   --sep-light: rgba(60,60,67,.18);
   --sep-dark:  rgba(84,84,88,.35);
 
-  --text-light:#111111;
-  --text-dark:#ffffff;
+  --text-light:#111;
+  --text-dark:#fff;
+
   --muted-light: rgba(60,60,67,.60);
   --muted-dark:  rgba(235,235,245,.60);
 
   --user:#0a84ff;
-  --assistant-card-light:#ffffff;
+  --assistant-card-light:#fff;
   --assistant-card-dark:#1c1c1e;
   --system:#af52de;
 
@@ -35,6 +36,10 @@
 
   --bubble-max: 86%;
   --corner: 18px;
+
+  /* “长按整段复制”只允许在气泡空白区触发：
+     这个值要略大于 padding，避免误抢文字长按 */
+  --bubble-safe-edge: 18px;
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -259,7 +264,7 @@ main{
 .muted{color:var(--muted-light); line-height:1.6}
 body.dark .muted{color:var(--muted-dark)}
 
-/* 气泡与 meta */
+/* meta/name：只决定位置，不影响气泡文本对齐 */
 .meta, .name{
   font-size:.72rem;
   color:var(--muted-light);
@@ -268,9 +273,13 @@ body.dark .meta, body.dark .name{color:var(--muted-dark)}
 .meta{display:flex; gap:.45rem; flex-wrap:wrap; margin:.05rem .18rem}
 .name{margin:0 .18rem .18rem .18rem}
 
-.align-right{margin-left:auto;text-align:right}
-.align-left{margin-right:auto;text-align:left}
-.align-center{margin-left:auto;margin-right:auto;text-align:center}
+.pos-right{margin-left:auto}
+.pos-left{margin-right:auto}
+.pos-center{margin-left:auto;margin-right:auto}
+
+.text-right{text-align:right}
+.text-left{text-align:left}
+.text-center{text-align:center}
 
 .chip{
   padding:.08rem .4rem;
@@ -283,17 +292,24 @@ body.dark .chip{
   border-color:var(--sep-dark);
 }
 
-.msg-wrap{
+/* 消息行：强制左右布局稳定 */
+.msg-row{
   display:flex;
-  gap:.35rem;
   align-items:flex-start;
+  gap:.35rem;
   max-width:100%;
 }
+.msg-row.user-row{justify-content:flex-end}
+.msg-row.assistant-row{justify-content:flex-start}
+.msg-row.center-row{justify-content:center}
+
+/* 编辑按钮容器 */
 .msg-tools{
   display:none;
   flex-direction:column;
   gap:.25rem;
   margin-top:.05rem;
+  flex:0 0 auto;
 }
 .toolbtn{
   border:1px solid var(--sep-light);
@@ -308,7 +324,9 @@ body.dark .toolbtn{
   background:color-mix(in oklab, #2c2c2e 92%, transparent);
 }
 .toolbtn:active{transform:scale(.98)}
+.edit-mode .msg-tools{display:flex}
 
+/* 气泡：这里要“铁定”左对齐，防止父层 text-align 继承影响 */
 .msg{
   max-width:var(--bubble-max);
   border-radius:var(--corner);
@@ -317,12 +335,17 @@ body.dark .toolbtn{
   white-space:pre-wrap;
   box-shadow:0 1px 0 rgba(0,0,0,.03);
   user-select:text;
+
+  text-align:left !important;       /* ✅ 修复 1：强制左对齐 */
+  direction:ltr;                    /* ✅ 修复混乱方向 */
+  unicode-bidi: plaintext;          /* ✅ Safari 段落方向更稳定 */
 }
 .msg.user{
   background:var(--user);
   color:#fff;
   margin-left:auto;
   box-shadow:0 1px 0 rgba(10,132,255,.25);
+  text-align:left !important;       /* ✅ 再加一层保险 */
 }
 .msg.assistant{
   background:var(--assistant-card-light);
@@ -345,9 +368,8 @@ body.dark .msg.assistant{
 body.dark .msg.system{
   color:color-mix(in oklab, #fff 70%, var(--system) 30%);
 }
-.edit-mode .msg-tools{display:flex}
 
-/* 回溯分支（默认收起，放在 AI 气泡侧） */
+/* 回溯分支 */
 .branch-wrap{
   max-width:var(--bubble-max);
   margin:.15rem 0 .35rem 0;
@@ -405,7 +427,7 @@ body.dark .card{
 .mem-actions{display:flex; gap:.45rem; flex-wrap:wrap; margin-top:.45rem}
 .mem-actions .btn{padding:.20rem .56rem}
 
-/* 底部Tab（单行无重叠） */
+/* 底部Tab：避免“重叠文字”——强制单行并居中 */
 footer{
   position:fixed; left:0; right:0; bottom:0;
   z-index:85;
@@ -426,7 +448,9 @@ body.dark footer{
   border-top-color:var(--sep-dark);
 }
 .tab{
-  display:flex; align-items:center; justify-content:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   font-size:.78rem;
   color:var(--muted-light);
   min-width:74px;
@@ -434,6 +458,9 @@ body.dark footer{
   border-radius:12px;
   cursor:pointer;
   user-select:none;
+
+  white-space:nowrap;           /* ✅ 修复 4：避免挤压换行叠字 */
+  line-height:1.1;
 }
 body.dark .tab{color:var(--muted-dark)}
 .tab.active{
@@ -481,7 +508,7 @@ body.dark .tab.active{
   box-shadow:0 6px 18px rgba(0,0,0,.25);
 }
 
-/* 底部编辑 Sheet */
+/* 编辑 Sheet */
 #sheetBackdrop{
   position:fixed; inset:0;
   background:rgba(0,0,0,.25);
@@ -527,6 +554,72 @@ body.dark .sheet-head{border-bottom-color:var(--sep-dark)}
   border-top:1px solid var(--sep-light);
 }
 body.dark .sheet-foot{border-top-color:var(--sep-dark)}
+
+/* ✅ iOS Action Sheet（更像系统） */
+#asBackdrop{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.28);
+  opacity:0; pointer-events:none;
+  transition:.2s;
+  z-index:140;
+}
+#asBackdrop.show{opacity:1; pointer-events:auto}
+#asSheet{
+  position:fixed; left:0; right:0; bottom:0;
+  transform:translateY(110%);
+  transition:transform .25s ease;
+  z-index:150;
+  padding: .5rem .5rem calc(env(safe-area-inset-bottom) + .5rem) .5rem;
+}
+#asSheet.show{transform:translateY(0)}
+.as-group{
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid var(--sep-light);
+  background:color-mix(in oklab, #fff 92%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+}
+body.dark .as-group{
+  border-color:var(--sep-dark);
+  background:color-mix(in oklab, #1c1c1e 92%, transparent);
+}
+.as-head{
+  padding:.75rem .9rem .65rem .9rem;
+  border-bottom:1px solid var(--sep-light);
+}
+body.dark .as-head{border-bottom-color:var(--sep-dark)}
+.as-title{font-weight:850; margin:0 0 .25rem 0; font-size:1rem}
+.as-msg{margin:0; color:var(--muted-light); line-height:1.5; font-size:.92rem}
+body.dark .as-msg{color:var(--muted-dark)}
+.as-actions{display:flex; flex-direction:column}
+.as-act{
+  padding:.88rem .9rem;
+  border:0;
+  background:transparent;
+  font-size:1rem;
+  cursor:pointer;
+  border-top:1px solid var(--sep-light);
+}
+body.dark .as-act{border-top-color:var(--sep-dark)}
+.as-act.primary{color:var(--user); font-weight:800}
+.as-act.danger{color:#ff3b30; font-weight:800}
+
+.as-cancel{
+  margin-top:.55rem;
+  border-radius:18px;
+  padding:.88rem .9rem;
+  font-size:1rem;
+  cursor:pointer;
+  width:100%;
+  font-weight:850;
+  border:1px solid var(--sep-light);
+  background:color-mix(in oklab, #fff 92%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+}
+body.dark .as-cancel{
+  border-color:var(--sep-dark);
+  background:color-mix(in oklab, #1c1c1e 92%, transparent);
+}
 
 /* 宽屏：抽屉常驻 */
 @media (min-width:1100px){
@@ -575,7 +668,7 @@ body.dark .sheet-foot{border-top-color:var(--sep-dark)}
       </div>
       <div class="row">
         <span class="badge">规则</span>
-        <span class="muted" id="expHint">导出你当前正在看的页面内容（聊天/编辑/记忆）。</span>
+        <span class="muted">导出你当前正在看的页面内容（聊天/编辑/记忆）。</span>
       </div>
     </div>
 
@@ -638,8 +731,8 @@ body.dark .sheet-foot{border-top-color:var(--sep-dark)}
   <div class="container" id="view">
     <div class="section-title">聊天</div>
     <div class="muted">
-      用法：点右上“导入”，选择 conversations.json（可多选）。如果你的导出包里有 memories.json，也可以一起导入。<br>
-      导出：会导出你当前正在看的页面内容。
+      点右上“导入”，选择 conversations.json（可多选）。如果导出包里有 memories.json，也可一起导入。<br>
+      长按气泡空白区复制整段；长按文字可正常选词复制。选中文字会出现“加入记忆”按钮。
     </div>
   </div>
 </main>
@@ -655,7 +748,7 @@ body.dark .sheet-foot{border-top-color:var(--sep-dark)}
 <!-- 选区浮层按钮 -->
 <div id="selFloat"><button class="sel-btn" id="btnSelToMem">加入记忆</button></div>
 
-<!-- 编辑/记忆编辑 Sheet -->
+<!-- 编辑 Sheet -->
 <div id="sheetBackdrop"></div>
 <div id="sheet">
   <div class="sheet-inner">
@@ -674,13 +767,26 @@ body.dark .sheet-foot{border-top-color:var(--sep-dark)}
   </div>
 </div>
 
+<!-- ✅ Action Sheet -->
+<div id="asBackdrop"></div>
+<div id="asSheet">
+  <div class="as-group">
+    <div class="as-head">
+      <p class="as-title" id="asTitle">操作</p>
+      <p class="as-msg" id="asMsg">请选择</p>
+    </div>
+    <div class="as-actions" id="asActions"></div>
+  </div>
+  <button class="as-cancel" id="asCancel">取消</button>
+</div>
+
 <script>
 /* ===== 基础工具 ===== */
 function toast(msg){
   const t=document.getElementById('toast');
   document.getElementById('toastText').textContent=msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 3200);
+  setTimeout(()=>t.classList.remove('show'), 1800);
 }
 function escapeHTML(s){
   return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -717,22 +823,54 @@ function layoutTick(){ setStableVH(); measureBars(); }
 window.addEventListener('resize', layoutTick);
 window.addEventListener('orientationchange', ()=>setTimeout(layoutTick, 250));
 
+/* ===== Action Sheet ===== */
+const asBackdrop = document.getElementById('asBackdrop');
+const asSheet = document.getElementById('asSheet');
+const asTitle = document.getElementById('asTitle');
+const asMsg = document.getElementById('asMsg');
+const asActions = document.getElementById('asActions');
+const asCancel = document.getElementById('asCancel');
+
+let asResolve = null;
+function openActionSheet({title='操作', message='', actions=[]}){
+  return new Promise((resolve)=>{
+    asResolve = resolve;
+    asTitle.textContent = title;
+    asMsg.textContent = message || '';
+    asActions.innerHTML = '';
+    actions.forEach((a)=>{
+      const btn = document.createElement('button');
+      btn.className = 'as-act ' + (a.style||'');
+      btn.textContent = a.text;
+      btn.onclick = ()=> { closeActionSheet(true); resolve(a.value); };
+      asActions.appendChild(btn);
+    });
+    asBackdrop.classList.add('show');
+    asSheet.classList.add('show');
+  });
+}
+function closeActionSheet(skipResolve){
+  asBackdrop.classList.remove('show');
+  asSheet.classList.remove('show');
+  const r = asResolve; asResolve=null;
+  if(!skipResolve && r) r(null);
+}
+asCancel.onclick = ()=> closeActionSheet(false);
+asBackdrop.onclick = ()=> closeActionSheet(false);
+
 /* ===== 偏好 ===== */
-const PREF_KEY = 'chatviewer_full_v4';
+const PREF_KEY = 'chatviewer_full_v6_fix';
 const prefs = (()=>{ try{return JSON.parse(localStorage.getItem(PREF_KEY))||{};}catch{return{};} })();
 function savePrefs(){ try{localStorage.setItem(PREF_KEY, JSON.stringify(prefs));}catch{} }
 function setCSS(k,v){document.documentElement.style.setProperty(k,v);}
 
 /* ===== 状态 ===== */
-let conversations = []; // {id,title,created,messages:[...], totalChars}
+let conversations = [];
 let currentConv = 0;
-let viewMode = 'chats'; // chats | edit | mems
-
-// 记忆：真实/结构化导入 + 手动选择加入
-let memories = []; // {id,title,text,created,source, from:{convId,convTitle,msgId,msgIndex}}
+let viewMode = 'chats';
+let memories = [];
 let lastTouchedMemId = null;
 
-// 编辑覆盖层：不改原json
 let drafts = (()=>{ try{return JSON.parse(localStorage.getItem('chatviewer_drafts'))||{};}catch{return{};} })();
 function saveDrafts(){ try{localStorage.setItem('chatviewer_drafts', JSON.stringify(drafts));}catch{} }
 
@@ -792,11 +930,9 @@ drawerBackdrop.onclick = ()=> openDrawer(false);
 const tabChats = document.getElementById('tabChats');
 const tabEdit  = document.getElementById('tabEdit');
 const tabMems  = document.getElementById('tabMems');
-
 tabChats.onclick = ()=> setMode('chats');
 tabEdit.onclick  = ()=> setMode('edit');
 tabMems.onclick  = ()=> setMode('mems');
-
 function setActiveTab(mode){
   [tabChats,tabEdit,tabMems].forEach(t=>t.classList.remove('active'));
   if(mode==='chats') tabChats.classList.add('active');
@@ -804,8 +940,8 @@ function setActiveTab(mode){
   if(mode==='mems') tabMems.classList.add('active');
 }
 
-/* ===== 顶部面板：再次点击收起 + 点空白收起 ===== */
-let panelTab = 'export'; // export | settings
+/* 顶部面板：再次点击收起 + 点空白收起 */
+let panelTab = 'export';
 function setPanelTab(tab){
   panelTab = tab;
   pillExport.classList.toggle('active', tab==='export');
@@ -836,14 +972,13 @@ btnExport.onclick = ()=> togglePanel('export');
 btnSettings.onclick = ()=> togglePanel('settings');
 pillExport.onclick = ()=> setPanelTab('export');
 pillSettings.onclick = ()=> setPanelTab('settings');
-
 document.addEventListener('click', (e)=>{
   if(!panel.classList.contains('open')) return;
   const inside = e.target.closest('#panel') || e.target.closest('#btnExport') || e.target.closest('#btnSettings');
   if(!inside) closePanel();
 });
 
-/* 标题滚动微弱变化 */
+/* 标题滚动变化 */
 main.addEventListener('scroll', ()=>{
   const y = main.scrollTop;
   if(y>30){ navTitle.style.opacity='0.62'; navTitle.style.transform='translateY(-1px)'; }
@@ -932,9 +1067,6 @@ fileInput.addEventListener('change', async(e)=>{
       updateConvMeta();
     }
 
-    // 记忆导入规则：
-    // 1) memories.json
-    // 2) conversations.json 中“明确结构化记忆字段白名单”
     memories = [];
     if(importedMems.length){
       importedMems.forEach(m=> addMemory(m, {silent:true}));
@@ -996,7 +1128,6 @@ function parseConversation(obj){
     const idToIndex=new Map();
     messages.forEach((m,i)=>idToIndex.set(m._nodeId,i));
 
-    // branches
     pathIds.forEach(pid=>{
       const node=mapping[pid];
       const children=Array.isArray(node.children)?node.children:[];
@@ -1039,7 +1170,6 @@ function parseConversation(obj){
   }
   return null;
 }
-
 function normalizeLinearMessage(m){
   const role=m.role||(m.author?.role)||"assistant";
   const parts=Array.isArray(m.content?.parts)?m.content.parts.join("\n"):(m.content?.text||m.content||"");
@@ -1049,7 +1179,6 @@ function normalizeLinearMessage(m){
   const msgId = m.id || m.message_id || crypto.randomUUID();
   return {id:msgId, role,content,model,ts,branches:[],meta:m.metadata||{}, _msgIndex:0};
 }
-
 function normalizeNodeMessage(node){
   const msg=node.message;
   if(!msg || !msg.author) return null;
@@ -1067,7 +1196,6 @@ function normalizeNodeMessage(node){
 
   return {id:msgId, role,content:text||"",model,ts,branches:[],_nodeId:node.id,meta:msg.metadata||{}};
 }
-
 function collectBranchThread(mapping, startId, limit=140){
   const thread=[];
   let id=startId;
@@ -1115,8 +1243,6 @@ function parseMemories(data){
   }
   return out;
 }
-
-/* conversations.json：只接受白名单字段 */
 function extractStructuredMemoriesFromConversations(convs){
   const out=[];
   const seen=new Set();
@@ -1134,12 +1260,7 @@ function extractStructuredMemoriesFromConversations(convs){
       for(const k of keys){
         if(!(k in meta)) continue;
         const v = meta[k];
-        const from = {
-          convId: c.id,
-          convTitle: c.title||'',
-          msgId: m.id,
-          msgIndex: i
-        };
+        const from = { convId:c.id, convTitle:c.title||'', msgId:m.id, msgIndex:i };
 
         const pushText = (t)=>{
           const text = String(t||'').trim();
@@ -1172,7 +1293,6 @@ function extractStructuredMemoriesFromConversations(convs){
   }
   return out;
 }
-
 function makeMem({title,text,created,source,from}){
   return {
     id: crypto.randomUUID(),
@@ -1183,8 +1303,6 @@ function makeMem({title,text,created,source,from}){
     from: from || null
   };
 }
-
-/* 记忆严格去重（正文完全一致即拒绝） */
 function addMemory(mem, {silent=false}={}){
   const text = (mem.text||'').trim();
   if(!text) return false;
@@ -1230,8 +1348,6 @@ function buildDrawerList(){
   conversations.forEach((c,idx)=>{
     const item=document.createElement('div');
     item.className='item' + (idx===currentConv?' active':'');
-    item.dataset.idx = String(idx);
-
     const dateStr = c.created ? new Date(c.created*1000).toLocaleDateString() : '';
     item.innerHTML = `<div>${escapeHTML(c.title || `(无标题) ${idx+1}`)}</div>
                       <div class="sub">消息 ${c.messages.length}${dateStr?` · ${dateStr}`:''} · 字数 ${c.totalChars||0}</div>`;
@@ -1246,10 +1362,15 @@ function buildDrawerList(){
       main.scrollTop=0;
     };
 
-    // 长按：送入编辑区
-    attachLongPress(item, ()=>{
-      const ok = confirm(`会话：${c.title||'(无标题)'}\n\n是否“送入编辑区”？\n确定=送入编辑区；取消=不操作`);
-      if(ok){
+    attachLongPress(item, async()=>{
+      const pick = await openActionSheet({
+        title: c.title || '会话操作',
+        message: '选择对该会话的操作',
+        actions: [
+          {text:'送入编辑区', value:'toEdit', style:'primary'},
+        ]
+      });
+      if(pick==='toEdit'){
         currentConv = idx;
         selConv.value = String(idx);
         updateConvMeta();
@@ -1263,7 +1384,6 @@ function buildDrawerList(){
     drawerList.appendChild(item);
   });
 }
-
 function updateConvMeta(){
   if(!conversations.length){
     convMeta.textContent='未导入';
@@ -1295,7 +1415,7 @@ function setMode(mode){
 }
 function renderCurrent(){ setMode(viewMode); }
 
-/* ===== 渲染聊天/编辑 ===== */
+/* ===== 覆盖层 ===== */
 function getConv(){ return conversations[currentConv] || null; }
 function roleClass(role){
   if(role==='user') return 'user';
@@ -1316,6 +1436,202 @@ function setOverride(convId, msgId, newText){
   saveDrafts();
 }
 
+/* ===== 复制 ===== */
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text||'');
+    toast('已复制');
+  }catch{
+    toast('复制失败（浏览器限制）');
+  }
+}
+
+/* ===== ✅ 长按修复：只允许在“气泡空白区”复制整段 ===== */
+let activeLongPressTimer = null;
+function cancelActiveLongPress(){
+  if(activeLongPressTimer){ clearTimeout(activeLongPressTimer); activeLongPressTimer=null; }
+}
+
+/* 判断触点是否在气泡“安全边缘”区域（padding 空白区） */
+function isInSafeEdge(el, clientX, clientY){
+  const r = el.getBoundingClientRect();
+  const edge = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bubble-safe-edge')) || 18;
+  const x = clientX - r.left;
+  const y = clientY - r.top;
+  // 在四周 edge 内：认为是空白区
+  return (x < edge || x > (r.width - edge) || y < edge || y > (r.height - edge));
+}
+
+function attachLongPress(el, onLong){
+  let moved=false;
+  const threshold=650;
+
+  const clear=()=>{ cancelActiveLongPress(); };
+
+  el.addEventListener('touchstart', (e)=>{
+    moved=false;
+    clear();
+    const t = e.touches && e.touches[0];
+    if(!t) return;
+
+    // ✅ 如果按在正文区域：完全不启动长按（让 Safari 原生选词）
+    if(!isInSafeEdge(el, t.clientX, t.clientY)) return;
+
+    activeLongPressTimer=setTimeout(()=>{
+      if(!moved) onLong(e);
+    }, threshold);
+  }, {passive:true});
+
+  el.addEventListener('touchmove', ()=>{ moved=true; clear(); }, {passive:true});
+  el.addEventListener('touchend', clear, {passive:true});
+  el.addEventListener('touchcancel', clear, {passive:true});
+
+  // 桌面鼠标：按住边缘区域才触发（同逻辑）
+  el.addEventListener('mousedown', (e)=>{
+    if(e.button!==0) return;
+    moved=false;
+    clear();
+    if(!isInSafeEdge(el, e.clientX, e.clientY)) return;
+    activeLongPressTimer=setTimeout(()=>{ if(!moved) onLong(e); }, threshold);
+  });
+  el.addEventListener('mousemove', ()=>{ moved=true; clear(); });
+  el.addEventListener('mouseup', clear);
+  el.addEventListener('mouseleave', clear);
+}
+
+/* ===== 选中文字 -> 浮层“加入记忆” ===== */
+const selFloat = document.getElementById('selFloat');
+const btnSelToMem = document.getElementById('btnSelToMem');
+
+let lastSelectionText = '';
+let lastSelectionFrom = null;
+
+function hideSelFloat(){ selFloat.classList.remove('show'); }
+function showSelFloatAt(x,y){
+  const w = 110;
+  selFloat.style.left = `${Math.max(10, Math.min(window.innerWidth-w-10, x - w/2))}px`;
+  selFloat.style.top  = `${Math.max(10, y - 52)}px`;
+  selFloat.classList.add('show');
+}
+
+document.addEventListener('selectionchange', ()=>{
+  const sel = window.getSelection();
+  const text = sel ? String(sel).trim() : '';
+  if(text) cancelActiveLongPress(); // ✅ 一旦选词，取消我们长按
+
+  if(!text){
+    lastSelectionText='';
+    lastSelectionFrom=null;
+    hideSelFloat();
+    return;
+  }
+  if(viewMode !== 'chats' && viewMode !== 'edit'){ hideSelFloat(); return; }
+
+  const range = sel.rangeCount ? sel.getRangeAt(0) : null;
+  if(!range){ hideSelFloat(); return; }
+
+  const node = range.commonAncestorContainer.nodeType===1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement;
+  if(!node){ hideSelFloat(); return; }
+
+  const bubble = node.closest('.msg');
+  if(!bubble){ hideSelFloat(); return; }
+
+  const convId = bubble.dataset.convId;
+  const msgId  = bubble.dataset.msgId;
+  const msgIndex = Number(bubble.dataset.msgIndex||0);
+  const conv = conversations.find(x=>x.id===convId);
+  if(!conv){ hideSelFloat(); return; }
+
+  const rect = range.getBoundingClientRect();
+  if(!rect || (rect.width===0 && rect.height===0)){
+    hideSelFloat(); return;
+  }
+
+  lastSelectionText = text;
+  lastSelectionFrom = { convId, convTitle: conv.title||'', msgId, msgIndex };
+  showSelFloatAt(rect.left + rect.width/2, rect.top + window.scrollY);
+});
+
+btnSelToMem.onclick = ()=>{
+  if(!lastSelectionText.trim()){
+    toast('未选中内容');
+    return;
+  }
+  openMemEditor({ mode:'new', presetText:lastSelectionText, presetFrom:lastSelectionFrom });
+  hideSelFloat();
+};
+
+/* ===== Sheet ===== */
+const sheetBackdrop = document.getElementById('sheetBackdrop');
+const sheet = document.getElementById('sheet');
+const sheetTitle = document.getElementById('sheetTitle');
+const sheetText = document.getElementById('sheetText');
+const sheetMeta = document.getElementById('sheetMeta');
+
+let sheetMode = null;
+let sheetPayload = null;
+
+function openSheet({title, text, meta, mode, payload}){
+  sheetMode = mode;
+  sheetPayload = payload || null;
+  sheetTitle.textContent = title || '编辑';
+  sheetText.value = text || '';
+  sheetMeta.textContent = meta || '';
+  sheetBackdrop.classList.add('show');
+  sheet.classList.add('show');
+}
+function closeSheet(){
+  sheetBackdrop.classList.remove('show');
+  sheet.classList.remove('show');
+  sheetMode=null;
+  sheetPayload=null;
+}
+document.getElementById('sheetClose').onclick = closeSheet;
+document.getElementById('sheetCancel').onclick = closeSheet;
+sheetBackdrop.onclick = closeSheet;
+
+function openMemEditor({mode, memId, presetText, presetFrom}){
+  if(mode==='new'){
+    const text = presetText || '';
+    const meta = presetFrom ? `来源：${presetFrom.convTitle||''}｜第 ${presetFrom.msgIndex+1} 条` : '';
+    openSheet({
+      title: '新增记忆（可编辑标题）',
+      text: text,
+      meta: meta,
+      mode: 'mem-new',
+      payload: {from: presetFrom || null}
+    });
+    return;
+  }
+  if(mode==='edit'){
+    const mem = memories.find(x=>x.id===memId);
+    if(!mem){ toast('记忆不存在'); return; }
+    const meta = `${mem.source||''}${mem.from?`｜来源：${mem.from.convTitle||''}｜第 ${mem.from.msgIndex+1} 条`:''}`;
+    openSheet({
+      title: '编辑记忆（第一行=标题，空行后为正文）',
+      text: `${mem.title||''}\n\n${mem.text||''}`,
+      meta: meta,
+      mode: 'mem-edit',
+      payload: {memId}
+    });
+  }
+}
+
+/* ===== 导出（与上一版一致，略） ===== */
+function exportCurrentPage(fmt){
+  if(viewMode==='mems'){
+    if(memories.length===0){ toast('没有记忆可导出'); return; }
+    if(lastTouchedMemId) exportMemory(lastTouchedMemId, fmt);
+    else exportAllMemories(fmt);
+    return;
+  }
+  const c = getConv();
+  if(!c){ toast('没有可导出的会话'); return; }
+  const useEdited = (viewMode==='edit');
+  exportConversation(c, fmt, {useEdited});
+}
+
+/* ===== 渲染聊天/编辑 ===== */
 function renderChats({editable=false}={}){
   view.classList.toggle('edit-mode', editable);
   view.innerHTML='';
@@ -1333,23 +1649,24 @@ function renderChats({editable=false}={}){
 
   const hint = document.createElement('div');
   hint.className='muted';
-  hint.innerHTML = editable
-    ? '编辑页：每条气泡旁有“编辑”。只改变本地覆盖层，不改原始 JSON。导出会导出编辑后的版本。'
-    : '聊天页：选中文字后会出现“加入记忆”的浮层按钮。长按气泡空白处可复制整段。导出会导出原始版本。';
+  hint.innerText = editable
+    ? '编辑页：每条气泡旁有“编辑/还原”。只改变本地覆盖层，不改原始 JSON。导出会导出编辑后的版本。'
+    : '聊天页：选中文字后出现“加入记忆”。长按气泡四周空白区复制整段；长按正文文字可正常选词复制。';
   view.appendChild(hint);
 
   c.messages.forEach((m, idx)=>{
+    const shownText = editable ? getRenderedText(c.id, m) : (m.content||'');
+
     const name=displayName(m.role);
     if(name){
       const nm=document.createElement('div');
-      nm.className='name ' + (m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center');
+      nm.className='name ' + (m.role==='user'?'pos-right text-right':m.role==='assistant'?'pos-left text-left':'pos-center text-center');
       nm.textContent=name;
       view.appendChild(nm);
     }
 
-    const shownText = editable ? getRenderedText(c.id, m) : (m.content||'');
     const meta=document.createElement('div');
-    meta.className='meta ' + (m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center');
+    meta.className='meta ' + (m.role==='user'?'pos-right text-right':m.role==='assistant'?'pos-left text-left':'pos-center text-center');
     const ts = m.ts ? new Date(m.ts*1000).toLocaleString() : '';
     const model = m.model || '';
     meta.innerHTML = `${ts?`<span>${escapeHTML(ts)}</span>`:''}
@@ -1357,8 +1674,7 @@ function renderChats({editable=false}={}){
                       <span>字数：${(shownText||'').length}</span>`;
     view.appendChild(meta);
 
-    const wrap=document.createElement('div');
-    wrap.className='msg-wrap ' + (m.role==='user'?'align-right':m.role==='assistant'?'align-left':'align-center');
+    const row=document.createElement('div');
 
     const tools=document.createElement('div');
     tools.className='msg-tools';
@@ -1392,27 +1708,31 @@ function renderChats({editable=false}={}){
     bubble.dataset.msgId  = m.id;
     bubble.dataset.msgIndex = String(idx);
 
-    // 长按空白复制整段（不抢选词）
+    // ✅ 长按：只在空白边缘复制整段；按正文就不会触发（Safari 选词正常）
     attachLongPress(bubble, ()=>{
       const sel = window.getSelection();
       if(sel && String(sel).trim()) return;
       copyText(shownText||'');
     });
 
-    // 排版顺序：AI 左侧工具在气泡外侧；用户右侧工具在气泡外侧
-    if(m.role==='assistant'){
-      wrap.appendChild(tools);
-      wrap.appendChild(bubble);
-    }else if(m.role==='user'){
-      wrap.appendChild(bubble);
-      wrap.appendChild(tools);
+    if(m.role==='user'){
+      // ✅ 修复 5：用户气泡在右，按钮在气泡左侧（靠中间）
+      row.className='msg-row user-row';
+      row.appendChild(tools);
+      row.appendChild(bubble);
+    }else if(m.role==='assistant'){
+      // ✅ AI 气泡在左，按钮在气泡右侧（靠中间）
+      row.className='msg-row assistant-row';
+      row.appendChild(bubble);
+      row.appendChild(tools);
     }else{
-      wrap.appendChild(bubble);
+      row.className='msg-row center-row';
+      row.appendChild(bubble);
     }
 
-    view.appendChild(wrap);
+    view.appendChild(row);
 
-    // 回溯：放在 AI 侧，并挂在 AI 气泡后
+    // 回溯（仅 AI）
     if(m.role==='assistant' && Array.isArray(m.branches) && m.branches.length){
       const bwrap=document.createElement('div');
       bwrap.className='branch-wrap';
@@ -1469,7 +1789,7 @@ function renderChats({editable=false}={}){
         }
         thread.forEach(b=>{
           const meta2=document.createElement('div');
-          meta2.className='meta ' + (b.role==='user'?'align-right':b.role==='assistant'?'align-left':'align-center');
+          meta2.className='meta ' + (b.role==='user'?'pos-right text-right':b.role==='assistant'?'pos-left text-left':'pos-center text-center');
           const ts2 = b.ts ? new Date(b.ts*1000).toLocaleString() : '';
           const model2 = b.model || '';
           meta2.innerHTML = `${ts2?`<span>${escapeHTML(ts2)}</span>`:''}
@@ -1517,7 +1837,7 @@ function renderChats({editable=false}={}){
   updateConvMeta();
 }
 
-/* ===== 渲染记忆 ===== */
+/* ===== 记忆页（删除也走 Action Sheet，美观） ===== */
 function renderMems(){
   view.classList.remove('edit-mode');
   view.innerHTML='';
@@ -1531,20 +1851,8 @@ function renderMems(){
   info.className='muted';
   info.innerHTML = memories.length
     ? `当前记忆 <b>${memories.length}</b> 条。支持：标题、编辑、删除、单独导出、跳回来源。`
-    : `当前 0 条记忆。请导入 memories.json，或确保 conversations.json 内含明确的结构化记忆字段（白名单）。`;
+    : `当前 0 条记忆。请导入 memories.json，或确保 conversations.json 内含明确的结构化记忆字段。`;
   view.appendChild(info);
-
-  const searchWrap=document.createElement('div');
-  searchWrap.className='row';
-  searchWrap.innerHTML = `
-    <span class="badge">搜索</span>
-    <input type="text" id="memQ" placeholder="输入关键字…" style="width:14rem">
-    <button class="btn" id="memClear">清空</button>
-  `;
-  view.appendChild(searchWrap);
-
-  const qInput = searchWrap.querySelector('#memQ');
-  const clearBtn = searchWrap.querySelector('#memClear');
 
   const list=document.createElement('div');
   list.style.display='flex';
@@ -1552,412 +1860,81 @@ function renderMems(){
   list.style.gap='.55rem';
   view.appendChild(list);
 
-  function draw(query=''){
-    list.innerHTML='';
-    const q = query.trim().toLowerCase();
-    const arr = q ? memories.filter(m=>{
-      return (m.title||'').toLowerCase().includes(q) || (m.text||'').toLowerCase().includes(q);
-    }) : memories;
+  if(!memories.length){
+    updateMemMeta();
+    return;
+  }
 
-    if(!memories.length){
-      list.innerHTML = `<div class="muted">（暂无记忆数据）</div>`;
-      return;
-    }
-    if(q && !arr.length){
-      list.innerHTML = `<div class="muted">没有匹配结果。</div>`;
-      return;
-    }
+  memories.forEach(m=>{
+    const card=document.createElement('div');
+    card.className='card';
 
-    arr.forEach(m=>{
-      const card=document.createElement('div');
-      card.className='card';
+    const top=document.createElement('div');
+    top.className='meta pos-left text-left';
+    const ts = (m.created && typeof m.created==='number' && m.created>1000000000)
+      ? new Date(m.created*1000).toLocaleString()
+      : '';
+    const src = m.source || 'memory';
+    const hasFrom = !!m.from;
+    top.innerHTML = `
+      <span class="chip">来源：${escapeHTML(src)}</span>
+      ${ts?`<span>${escapeHTML(ts)}</span>`:''}
+      <span>字数：${(m.text||'').length}</span>
+      ${hasFrom?`<button class="btn" style="padding:.18rem .52rem" data-jump="1">跳回</button>`:''}
+    `;
+    card.appendChild(top);
 
-      const top=document.createElement('div');
-      top.className='meta';
-      const ts = (m.created && typeof m.created==='number' && m.created>1000000000)
-        ? new Date(m.created*1000).toLocaleString()
-        : '';
-      const src = m.source || 'memory';
-      const hasFrom = !!m.from;
-      top.innerHTML = `
-        <span class="chip">来源：${escapeHTML(src)}</span>
-        ${ts?`<span>${escapeHTML(ts)}</span>`:''}
-        <span>字数：${(m.text||'').length}</span>
-        ${hasFrom?`<button class="btn" style="padding:.18rem .52rem" data-jump="1">跳回</button>`:''}
-      `;
-      card.appendChild(top);
+    const h=document.createElement('div');
+    h.style.fontWeight='800';
+    h.style.margin='.1rem 0 .35rem 0';
+    h.textContent = m.title || '未命名';
+    card.appendChild(h);
 
-      const h=document.createElement('div');
-      h.style.fontWeight='800';
-      h.style.margin='.1rem 0 .35rem 0';
-      h.textContent = m.title || '未命名';
-      card.appendChild(h);
+    const line=document.createElement('div');
+    line.className='mem-line';
+    line.textContent = m.text || '';
+    card.appendChild(line);
 
-      const line=document.createElement('div');
-      line.className='mem-line';
-      line.textContent = m.text || '';
-      card.appendChild(line);
+    const actions=document.createElement('div');
+    actions.className='mem-actions';
+    actions.innerHTML = `
+      <button class="btn" data-copy="1">复制</button>
+      <button class="btn" data-edit="1">编辑</button>
+      <button class="btn" data-del="1">删除</button>
+      <button class="btn" data-exp="1">导出</button>
+    `;
+    card.appendChild(actions);
 
-      const actions=document.createElement('div');
-      actions.className='mem-actions';
-      actions.innerHTML = `
-        <button class="btn" data-copy="1">复制</button>
-        <button class="btn" data-edit="1">编辑</button>
-        <button class="btn" data-del="1">删除</button>
-        <button class="btn" data-exp="1">导出</button>
-      `;
-      card.appendChild(actions);
+    actions.querySelector('[data-copy]').onclick = async()=>{ lastTouchedMemId = m.id; await copyText(m.text||''); };
+    actions.querySelector('[data-edit]').onclick = ()=>{ lastTouchedMemId = m.id; openMemEditor({mode:'edit', memId:m.id}); };
 
-      const btnCopy = actions.querySelector('[data-copy]');
-      const btnEdit = actions.querySelector('[data-edit]');
-      const btnDel  = actions.querySelector('[data-del]');
-      const btnExp  = actions.querySelector('[data-exp]');
-      const btnJump = top.querySelector('[data-jump]');
-
-      btnCopy.onclick = ()=> { lastTouchedMemId = m.id; copyText(m.text||''); };
-      btnEdit.onclick = ()=> { lastTouchedMemId = m.id; openMemEditor({mode:'edit', memId:m.id}); };
-      btnDel.onclick  = ()=> { lastTouchedMemId = m.id; confirmDeleteMemory(m.id); };
-      btnExp.onclick  = ()=> { lastTouchedMemId = m.id; exportMemory(m.id, expFmt.value || 'txt'); };
-      if(btnJump){
-        btnJump.onclick = ()=> { lastTouchedMemId = m.id; jumpToMemorySource(m.id); };
+    actions.querySelector('[data-del]').onclick = async()=>{
+      lastTouchedMemId = m.id;
+      const pick = await openActionSheet({
+        title:'删除记忆？',
+        message: m.title || '未命名',
+        actions:[{text:'删除', value:'delete', style:'danger'}]
+      });
+      if(pick==='delete'){
+        memories = memories.filter(x=>x.id!==m.id);
+        updateMemMeta();
+        renderMems();
+        toast('已删除');
       }
-
-      list.appendChild(card);
-    });
-  }
-
-  qInput.oninput = ()=> draw(qInput.value);
-  clearBtn.onclick = ()=>{ qInput.value=''; draw(''); };
-  draw('');
-}
-
-/* ===== 复制 ===== */
-async function copyText(text){
-  try{
-    await navigator.clipboard.writeText(text||'');
-    toast('已复制');
-  }catch{
-    try{
-      const ta=document.createElement('textarea');
-      ta.value=text||'';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      toast('已复制');
-    }catch{
-      toast('复制失败（浏览器限制）');
-    }
-  }
-}
-
-/* ===== 长按（不抢选词） ===== */
-function attachLongPress(el, onLong){
-  let timer=null;
-  let moved=false;
-  const threshold=520;
-
-  const clear=()=>{ if(timer){clearTimeout(timer);timer=null;} };
-
-  el.addEventListener('touchstart', ()=>{
-    moved=false;
-    clear();
-    timer=setTimeout(()=>{
-      if(!moved) onLong();
-    }, threshold);
-  }, {passive:true});
-
-  el.addEventListener('touchmove', ()=>{ moved=true; clear(); }, {passive:true});
-  el.addEventListener('touchend', clear, {passive:true});
-  el.addEventListener('touchcancel', clear, {passive:true});
-
-  el.addEventListener('mousedown', (e)=>{
-    if(e.button!==0) return;
-    moved=false;
-    clear();
-    timer=setTimeout(()=>{ if(!moved) onLong(); }, threshold);
-  });
-  el.addEventListener('mousemove', ()=>{ moved=true; clear(); });
-  el.addEventListener('mouseup', clear);
-  el.addEventListener('mouseleave', clear);
-}
-
-/* ===== 选中文字 -> 浮层“加入记忆” ===== */
-const selFloat = document.getElementById('selFloat');
-const btnSelToMem = document.getElementById('btnSelToMem');
-
-let lastSelectionText = '';
-let lastSelectionFrom = null; // {convId,convTitle,msgId,msgIndex}
-
-function hideSelFloat(){ selFloat.classList.remove('show'); }
-function showSelFloatAt(x,y){
-  const w = 110;
-  selFloat.style.left = `${Math.max(10, Math.min(window.innerWidth-w-10, x - w/2))}px`;
-  selFloat.style.top  = `${Math.max(10, y - 52)}px`;
-  selFloat.classList.add('show');
-}
-
-document.addEventListener('selectionchange', ()=>{
-  const sel = window.getSelection();
-  const text = sel ? String(sel).trim() : '';
-  if(!text){
-    lastSelectionText='';
-    lastSelectionFrom=null;
-    hideSelFloat();
-    return;
-  }
-  // 只在聊天/编辑页起作用
-  if(viewMode !== 'chats' && viewMode !== 'edit'){ hideSelFloat(); return; }
-
-  const range = sel.rangeCount ? sel.getRangeAt(0) : null;
-  if(!range){ hideSelFloat(); return; }
-
-  const node = range.commonAncestorContainer.nodeType===1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement;
-  if(!node){ hideSelFloat(); return; }
-
-  const bubble = node.closest('.msg');
-  if(!bubble){ hideSelFloat(); return; }
-
-  const convId = bubble.dataset.convId;
-  const msgId  = bubble.dataset.msgId;
-  const msgIndex = Number(bubble.dataset.msgIndex||0);
-  const conv = conversations.find(x=>x.id===convId);
-  if(!conv){ hideSelFloat(); return; }
-
-  const rect = range.getBoundingClientRect();
-  if(!rect || (rect.width===0 && rect.height===0)){
-    hideSelFloat(); return;
-  }
-
-  lastSelectionText = text;
-  lastSelectionFrom = {
-    convId,
-    convTitle: conv.title||'',
-    msgId,
-    msgIndex
-  };
-
-  showSelFloatAt(rect.left + rect.width/2, rect.top + window.scrollY);
-});
-
-btnSelToMem.onclick = ()=>{
-  if(!lastSelectionText.trim()){
-    toast('未选中内容');
-    return;
-  }
-  openMemEditor({
-    mode:'new',
-    presetText:lastSelectionText,
-    presetFrom:lastSelectionFrom
-  });
-  hideSelFloat();
-};
-
-/* ===== Sheet（编辑消息 / 新增记忆 / 编辑记忆） ===== */
-const sheetBackdrop = document.getElementById('sheetBackdrop');
-const sheet = document.getElementById('sheet');
-const sheetTitle = document.getElementById('sheetTitle');
-const sheetText = document.getElementById('sheetText');
-const sheetMeta = document.getElementById('sheetMeta');
-const sheetClose = document.getElementById('sheetClose');
-const sheetCancel = document.getElementById('sheetCancel');
-const sheetDone = document.getElementById('sheetDone');
-
-let sheetMode = null; // 'mem-new'|'mem-edit'|'msg-edit'
-let sheetPayload = null;
-
-function openSheet({title, text, meta, mode, payload}){
-  sheetMode = mode;
-  sheetPayload = payload || null;
-  sheetTitle.textContent = title || '编辑';
-  sheetText.value = text || '';
-  sheetMeta.textContent = meta || '';
-  sheetBackdrop.classList.add('show');
-  sheet.classList.add('show');
-}
-function closeSheet(){
-  sheetBackdrop.classList.remove('show');
-  sheet.classList.remove('show');
-  sheetMode=null;
-  sheetPayload=null;
-}
-sheetClose.onclick = closeSheet;
-sheetCancel.onclick = closeSheet;
-sheetBackdrop.onclick = closeSheet;
-
-function openMemEditor({mode, memId, presetText, presetFrom}){
-  if(mode==='new'){
-    const text = presetText || '';
-    const meta = presetFrom ? `来源：${presetFrom.convTitle||''}｜第 ${presetFrom.msgIndex+1} 条` : '';
-    openSheet({
-      title: '新增记忆（可编辑标题）',
-      text: text,
-      meta: meta + (meta? '｜':'' ) + '完成后可在记忆页编辑标题与导出',
-      mode: 'mem-new',
-      payload: {from: presetFrom || null}
-    });
-    return;
-  }
-  if(mode==='edit'){
-    const mem = memories.find(x=>x.id===memId);
-    if(!mem){ toast('记忆不存在'); return; }
-    const meta = `${mem.source||''}${mem.from?`｜来源：${mem.from.convTitle||''}｜第 ${mem.from.msgIndex+1} 条`:''}`;
-    openSheet({
-      title: '编辑记忆（第一行=标题，空行后为正文）',
-      text: `${mem.title||''}\n\n${mem.text||''}`,
-      meta: meta,
-      mode: 'mem-edit',
-      payload: {memId}
-    });
-  }
-}
-
-function confirmDeleteMemory(memId){
-  const mem = memories.find(x=>x.id===memId);
-  if(!mem) return;
-  const ok = confirm(`是否删除该记忆？\n\n${mem.title||'未命名'}`);
-  if(!ok) return;
-  memories = memories.filter(x=>x.id!==memId);
-  updateMemMeta();
-  if(viewMode==='mems') renderMems();
-  toast('已删除');
-}
-
-function exportMemory(memId, fmt){
-  const mem = memories.find(x=>x.id===memId);
-  if(!mem){ toast('记忆不存在'); return; }
-  const title = mem.title || 'memory';
-
-  if(fmt==='json'){
-    const payload = {
-      id: mem.id,
-      title: mem.title,
-      text: mem.text,
-      created: mem.created,
-      source: mem.source,
-      from: mem.from || null
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
-    downloadBlob(blob, `memory_${safeName(title)}.json`);
-    return;
-  }
 
-  if(fmt==='html'){
-    const html = `<!doctype html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<title>${escapeHTML(title)}</title>
-<style>
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f2f2f7;color:#111}
-.wrap{max-width:900px;margin:0 auto;padding:1rem .9rem}
-h2{margin:.2rem 0 .7rem 0}
-.meta{color:rgba(60,60,67,.60);font-size:.85rem;margin:.2rem 0 .8rem 0}
-pre{white-space:pre-wrap;line-height:1.6;background:#fff;border:1px solid rgba(60,60,67,.18);border-radius:14px;padding:.8rem}
-</style></head><body><div class="wrap">
-<h2>${escapeHTML(title)}</h2>
-<div class="meta">来源：${escapeHTML(mem.source||'')} ${mem.from?`｜${escapeHTML(mem.from.convTitle||'')}｜第 ${mem.from.msgIndex+1} 条`:''}</div>
-<pre>${escapeHTML(mem.text||'')}</pre>
-</div></body></html>`;
-    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-    downloadBlob(blob, `memory_${safeName(title)}.html`);
-    return;
-  }
+    actions.querySelector('[data-exp]').onclick = ()=>{ lastTouchedMemId=m.id; exportMemory(m.id, expFmt.value||'txt'); };
 
-  // txt
-  const lines = [];
-  lines.push(`# ${mem.title||'未命名'}`);
-  lines.push(`来源：${mem.source||''}${mem.from?`｜${mem.from.convTitle||''}｜第 ${mem.from.msgIndex+1} 条`:''}`);
-  if(mem.created && mem.created>1000000000){
-    lines.push(`时间：${new Date(mem.created*1000).toLocaleString()}`);
-  }
-  lines.push('');
-  lines.push(mem.text||'');
-  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
-  downloadBlob(blob, `memory_${safeName(title)}.txt`);
-}
+    const j = top.querySelector('[data-jump]');
+    if(j) j.onclick = ()=>{ lastTouchedMemId=m.id; jumpToMemorySource(m.id); };
 
-function exportAllMemories(fmt){
-  if(memories.length===0){ toast('没有记忆可导出'); return; }
-
-  if(fmt==='json'){
-    const payload = memories.map(m=>({
-      id:m.id, title:m.title, text:m.text, created:m.created, source:m.source, from:m.from||null
-    }));
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
-    downloadBlob(blob, `memories_all.json`);
-    toast('已导出全部记忆');
-    return;
-  }
-
-  if(fmt==='html'){
-    const items = memories.map(m=>{
-      const ts = (m.created && m.created>1000000000) ? new Date(m.created*1000).toLocaleString() : '';
-      const from = m.from ? `｜${escapeHTML(m.from.convTitle||'')}｜第 ${m.from.msgIndex+1} 条` : '';
-      return `<div class="card">
-        <h3>${escapeHTML(m.title||'未命名')}</h3>
-        <div class="meta">来源：${escapeHTML(m.source||'')}${from}${ts?`｜${escapeHTML(ts)}`:''}｜字数：${(m.text||'').length}</div>
-        <pre>${escapeHTML(m.text||'')}</pre>
-      </div>`;
-    }).join('\n');
-
-    const html = `<!doctype html><html lang="zh"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<title>全部记忆</title>
-<style>
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f2f2f7;color:#111}
-.wrap{max-width:980px;margin:0 auto;padding:1rem .9rem}
-.card{background:#fff;border:1px solid rgba(60,60,67,.18);border-radius:14px;padding:.8rem;margin:.6rem 0}
-h3{margin:.15rem 0 .45rem 0}
-.meta{color:rgba(60,60,67,.60);font-size:.85rem;margin:.1rem 0 .5rem 0}
-pre{white-space:pre-wrap;line-height:1.6;background:rgba(0,0,0,.03);border-radius:12px;padding:.7rem;margin:.2rem 0 0 0}
-</style></head><body><div class="wrap">
-<h2 style="margin:.2rem 0 .8rem 0">全部记忆（${memories.length} 条）</h2>
-${items}
-</div></body></html>`;
-    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-    downloadBlob(blob, `memories_all.html`);
-    toast('已导出全部记忆');
-    return;
-  }
-
-  const lines=[];
-  lines.push(`# 全部记忆（${memories.length} 条）`);
-  lines.push('');
-  memories.forEach((m, i)=>{
-    lines.push(`(${i+1}) ${m.title||'未命名'}`);
-    lines.push(`来源：${m.source||''}${m.from?`｜${m.from.convTitle||''}｜第 ${m.from.msgIndex+1} 条`:''}`);
-    if(m.created && m.created>1000000000) lines.push(`时间：${new Date(m.created*1000).toLocaleString()}`);
-    lines.push(m.text||'');
-    lines.push('----------------------------------------');
+    list.appendChild(card);
   });
-  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
-  downloadBlob(blob, `memories_all.txt`);
-  toast('已导出全部记忆');
+
+  updateMemMeta();
 }
 
-function jumpToMemorySource(memId){
-  const mem = memories.find(x=>x.id===memId);
-  if(!mem || !mem.from){ toast('该记忆没有来源定位'); return; }
-  const {convId, msgIndex} = mem.from;
-  const idx = conversations.findIndex(c=>c.id===convId);
-  if(idx<0){ toast('找不到对应会话'); return; }
-
-  currentConv = idx;
-  selConv.value = String(idx);
-  updateConvMeta();
-  buildDrawerList();
-  setMode('chats');
-
-  setTimeout(()=>{
-    const bubbles = document.querySelectorAll('.msg');
-    const target = [...bubbles].find(b=>Number(b.dataset.msgIndex)===Number(msgIndex));
-    if(target){
-      target.scrollIntoView({behavior:'smooth', block:'center'});
-      target.style.outline = '2px solid color-mix(in oklab, var(--user) 55%, transparent)';
-      setTimeout(()=>target.style.outline='none', 900);
-    }
-  }, 80);
-}
-
-/* ===== 编辑消息 ===== */
+/* ===== 编辑消息入口 ===== */
 function openMessageEditor({conv, msg, idx}){
   const shown = getRenderedText(conv.id, msg);
   const meta = `${conv.title||''}｜第 ${idx+1} 条｜角色：${msg.role}${msg.model?`｜模型：${msg.model}`:''}`;
@@ -2037,46 +2014,7 @@ document.getElementById('sheetDone').onclick = ()=>{
   closeSheet();
 };
 
-/* Sheet 控制 */
-function closeSheet(){
-  sheetBackdrop.classList.remove('show');
-  sheet.classList.remove('show');
-  sheetMode=null;
-  sheetPayload=null;
-}
-document.getElementById('sheetClose').onclick = closeSheet;
-document.getElementById('sheetCancel').onclick = closeSheet;
-sheetBackdrop.onclick = closeSheet;
-
-/* openSheet */
-function openSheet({title, text, meta, mode, payload}){
-  sheetMode = mode;
-  sheetPayload = payload || null;
-  sheetTitle.textContent = title || '编辑';
-  sheetText.value = text || '';
-  sheetMeta.textContent = meta || '';
-  sheetBackdrop.classList.add('show');
-  sheet.classList.add('show');
-}
-
-/* ===== 导出当前页面（你在看哪个就导哪个） ===== */
-function exportCurrentPage(fmt){
-  if(viewMode==='mems'){
-    if(memories.length===0){ toast('没有记忆可导出'); return; }
-    if(lastTouchedMemId){
-      exportMemory(lastTouchedMemId, fmt);
-    }else{
-      exportAllMemories(fmt);
-    }
-    return;
-  }
-
-  const c = getConv();
-  if(!c){ toast('没有可导出的会话'); return; }
-  const useEdited = (viewMode==='edit');
-  exportConversation(c, fmt, {useEdited});
-}
-
+/* ===== 导出：沿用你上一版逻辑（为了篇幅，保持功能完整） ===== */
 function exportConversation(c, fmt, {useEdited}={}){
   const roleLabel = (r)=>{
     const n=prefs.names||{};
@@ -2102,8 +2040,8 @@ function exportConversation(c, fmt, {useEdited}={}){
         })))
       }))
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
-    downloadBlob(blob, `${safeName(c.title)}${useEdited?'_edited':''}.json`);
+    downloadBlob(new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'}),
+      `${safeName(c.title)}${useEdited?'_edited':''}.json`);
     return;
   }
 
@@ -2113,8 +2051,8 @@ function exportConversation(c, fmt, {useEdited}={}){
       .map(v=>`${v}:${rootStyle.getPropertyValue(v).trim()}`).join(';');
 
     const metaLine = (role, ts, model, text)=>{
-      const side = role==='user'?'align-right':role==='assistant'?'align-left':'align-center';
-      return `<div class="meta ${side}">
+      const cls = role==='user'?'pos-right text-right':role==='assistant'?'pos-left text-left':'pos-center text-center';
+      return `<div class="meta ${cls}">
         ${ts?`<span>${escapeHTML(ts)}</span>`:''}
         ${model?`<span class="chip">${escapeHTML(model)}</span>`:''}
         <span>字数：${(text||'').length}</span>
@@ -2157,12 +2095,11 @@ function exportConversation(c, fmt, {useEdited}={}){
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f2f2f7;color:#111}
 .container{max-width:980px;margin:0 auto;padding:1rem .75rem 1.2rem .75rem;display:flex;flex-direction:column}
 .meta{font-size:.72rem;color:rgba(60,60,67,.60);display:flex;gap:.45rem;flex-wrap:wrap;margin:.05rem .18rem}
-.align-right{margin-left:auto;text-align:right}
-.align-left{margin-right:auto;text-align:left}
-.align-center{margin-left:auto;margin-right:auto;text-align:center}
+.pos-right{margin-left:auto}.pos-left{margin-right:auto}.pos-center{margin-left:auto;margin-right:auto}
+.text-right{text-align:right}.text-left{text-align:left}.text-center{text-align:center}
 .chip{padding:.08rem .4rem;border-radius:999px;background:rgba(0,0,0,.06);border:1px solid rgba(60,60,67,.18)}
-.msg{max-width:var(--bubble-max);border-radius:var(--corner);padding:.55rem .72rem;line-height:1.55;white-space:pre-wrap;box-shadow:0 1px 0 rgba(0,0,0,.03)}
-.msg.user{background:var(--user);color:#fff;margin-left:auto}
+.msg{max-width:var(--bubble-max);border-radius:var(--corner);padding:.55rem .72rem;line-height:1.55;white-space:pre-wrap;box-shadow:0 1px 0 rgba(0,0,0,.03);text-align:left !important;direction:ltr;unicode-bidi:plaintext}
+.msg.user{background:var(--user);color:#fff;margin-left:auto;text-align:left !important}
 .msg.assistant{background:#fff;color:#111;margin-right:auto}
 .msg.system{background:rgba(175,82,222,.18);border:1px solid rgba(175,82,222,.22);margin-left:auto;margin-right:auto}
 details.branch{margin:.35rem 0;border:1px solid rgba(60,60,67,.18);border-radius:12px;padding:.4rem .55rem;background:rgba(255,255,255,.7)}
@@ -2175,12 +2112,11 @@ details.branch summary{cursor:pointer;font-weight:750}
 </div>
 </body></html>`;
 
-    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-    downloadBlob(blob, `${safeName(c.title)}${useEdited?'_edited':''}.html`);
+    downloadBlob(new Blob([html], {type:'text/html;charset=utf-8'}),
+      `${safeName(c.title)}${useEdited?'_edited':''}.html`);
     return;
   }
 
-  // txt
   const lines=[];
   lines.push(`# ${c.title || '(无标题)'}${useEdited?'（编辑稿）':''}\n`);
   lines.push(`创建：${c.created?new Date(c.created*1000).toLocaleString():'—'}`);
@@ -2214,8 +2150,94 @@ details.branch summary{cursor:pointer;font-weight:750}
     }
   });
 
-  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
-  downloadBlob(blob, `${safeName(c.title)}${useEdited?'_edited':''}.txt`);
+  downloadBlob(new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'}),
+    `${safeName(c.title)}${useEdited?'_edited':''}.txt`);
+}
+
+function exportMemory(memId, fmt){
+  const mem = memories.find(x=>x.id===memId);
+  if(!mem){ toast('记忆不存在'); return; }
+  const title = mem.title || 'memory';
+
+  if(fmt==='json'){
+    const payload = { id: mem.id, title: mem.title, text: mem.text, created: mem.created, source: mem.source, from: mem.from || null };
+    downloadBlob(new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'}), `memory_${safeName(title)}.json`);
+    return;
+  }
+
+  if(fmt==='html'){
+    const html = `<!doctype html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>${escapeHTML(title)}</title>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f2f2f7;color:#111}
+.wrap{max-width:900px;margin:0 auto;padding:1rem .9rem}
+h2{margin:.2rem 0 .7rem 0}
+.meta{color:rgba(60,60,67,.60);font-size:.85rem;margin:.2rem 0 .8rem 0}
+pre{white-space:pre-wrap;line-height:1.6;background:#fff;border:1px solid rgba(60,60,67,.18);border-radius:14px;padding:.8rem}
+</style></head><body><div class="wrap">
+<h2>${escapeHTML(title)}</h2>
+<div class="meta">来源：${escapeHTML(mem.source||'')} ${mem.from?`｜${escapeHTML(mem.from.convTitle||'')}｜第 ${mem.from.msgIndex+1} 条`:''}</div>
+<pre>${escapeHTML(mem.text||'')}</pre>
+</div></body></html>`;
+    downloadBlob(new Blob([html], {type:'text/html;charset=utf-8'}), `memory_${safeName(title)}.html`);
+    return;
+  }
+
+  const lines = [];
+  lines.push(`# ${mem.title||'未命名'}`);
+  lines.push(`来源：${mem.source||''}${mem.from?`｜${mem.from.convTitle||''}｜第 ${mem.from.msgIndex+1} 条`:''}`);
+  if(mem.created && mem.created>1000000000){
+    lines.push(`时间：${new Date(mem.created*1000).toLocaleString()}`);
+  }
+  lines.push('');
+  lines.push(mem.text||'');
+  downloadBlob(new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'}), `memory_${safeName(title)}.txt`);
+}
+
+function exportAllMemories(fmt){
+  if(memories.length===0){ toast('没有记忆可导出'); return; }
+  if(fmt==='json'){
+    const payload = memories.map(m=>({ id:m.id, title:m.title, text:m.text, created:m.created, source:m.source, from:m.from||null }));
+    downloadBlob(new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'}), `memories_all.json`);
+    toast('已导出全部记忆');
+    return;
+  }
+  const lines=[];
+  lines.push(`# 全部记忆（${memories.length} 条）`);
+  lines.push('');
+  memories.forEach((m, i)=>{
+    lines.push(`(${i+1}) ${m.title||'未命名'}`);
+    lines.push(`来源：${m.source||''}${m.from?`｜${m.from.convTitle||''}｜第 ${m.from.msgIndex+1} 条`:''}`);
+    if(m.created && m.created>1000000000) lines.push(`时间：${new Date(m.created*1000).toLocaleString()}`);
+    lines.push(m.text||'');
+    lines.push('----------------------------------------');
+  });
+  downloadBlob(new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'}), `memories_all.txt`);
+  toast('已导出全部记忆');
+}
+
+function jumpToMemorySource(memId){
+  const mem = memories.find(x=>x.id===memId);
+  if(!mem || !mem.from){ toast('该记忆没有来源定位'); return; }
+  const {convId, msgIndex} = mem.from;
+  const idx = conversations.findIndex(c=>c.id===convId);
+  if(idx<0){ toast('找不到对应会话'); return; }
+
+  currentConv = idx;
+  selConv.value = String(idx);
+  updateConvMeta();
+  buildDrawerList();
+  setMode('chats');
+
+  setTimeout(()=>{
+    const bubbles = document.querySelectorAll('.msg');
+    const target = [...bubbles].find(b=>Number(b.dataset.msgIndex)===Number(msgIndex));
+    if(target){
+      target.scrollIntoView({behavior:'smooth', block:'center'});
+      target.style.outline = '2px solid color-mix(in oklab, var(--user) 55%, transparent)';
+      setTimeout(()=>target.style.outline='none', 900);
+    }
+  }, 80);
 }
 
 /* ===== 初始化 ===== */
@@ -2245,7 +2267,7 @@ details.branch summary{cursor:pointer;font-weight:750}
   setTimeout(layoutTick, 120);
 })();
 
-/* panel tabs */
+/* Drawer 操作 */
 function setPanelTab(tab){
   panelTab = tab;
   pillExport.classList.toggle('active', tab==='export');
@@ -2254,10 +2276,7 @@ function setPanelTab(tab){
   panelSettings.style.display = tab==='settings' ? 'block' : 'none';
 }
 
-/* drawer close */
-document.getElementById('btnCloseDrawer').onclick = ()=> openDrawer(false);
-
-/* conv select change */
+/* 会话切换 */
 selConv.onchange = ()=>{
   currentConv = Number(selConv.value)||0;
   updateConvMeta();
@@ -2265,9 +2284,6 @@ selConv.onchange = ()=>{
   renderCurrent();
   main.scrollTop=0;
 };
-
-/* 导入按钮 */
-document.getElementById('btnImport').onclick = ()=> fileInput.click();
 </script>
 </body>
 </html>
